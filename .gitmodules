@@ -1,0 +1,6 @@
+[submodule "imports/ui/modules/spc_chart"]
+	path = imports/ui/modules/spc_chart
+	url = https://git.valcri.org/mdx/spc_chart
+[submodule "imports/ui/modules/spc_map"]
+	path = imports/ui/modules/spc_map
+	url = https://git.valcri.org/mdx/spc_map

@@ -5,6 +5,8 @@ import Drawer from 'material-ui/Drawer';
 import IconButton from 'material-ui/IconButton';
 import FontIcon from 'material-ui/FontIcon';
 
+import Canvas from './Canvas.jsx';
+
 export default class App extends Component {
 
   constructor(props) {
@@ -12,11 +14,19 @@ export default class App extends Component {
 
     this.state = {
       leftOpen: false,
+      canvasRowHeight: 0,
+      rows: 18,
+      space: 11
     }
   };
 
   handleLeftOpen = () => this.setState({leftOpen: true});
   handleRightOpen = () => this.setState({rightOpen: true});
+
+  componentDidMount() {
+      const height = this.gridContainer.clientHeight;
+      this.setState({ canvasRowHeight: height / this.state.rows - this.state.space });  // Abitary values, bit of a hack.
+    }
 
   render() {
     return (
@@ -33,7 +43,7 @@ export default class App extends Component {
             </IconButton>}
             onLeftIconButtonClick={this.handleLeftOpen}
             onRightIconButtonClick={this.handleRightOpen}
-            style={{backgroundColor: "#999"}}
+            style={{backgroundColor: "#999", flexShrink: 0}}
             />
           <Drawer
             docked={false}
@@ -50,6 +60,9 @@ export default class App extends Component {
             >
             Hiss
           </Drawer>
+          <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
+            <Canvas rowHeight={this.state.canvasRowHeight} rows={this.state.rows} />
+          </div>
         </div>
       </MuiThemeProvider>
     );
