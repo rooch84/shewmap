@@ -8,6 +8,7 @@
     "@valcri/spc-sd": "^0.1.13",
     "babel-runtime": "^6.26.0",
     "d3": "^4.12.2",
+    "guid": "0.0.12",
     "material-ui": "^0.20.0",
     "meteor-node-stubs": "^0.3.2",
     "react": "^16.2.0",

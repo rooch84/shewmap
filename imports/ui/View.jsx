@@ -4,6 +4,7 @@ import * as Views from './Views.jsx';
 
 export default class View extends Component {
 
+
   constructor(props) {
     super(props);
     this.state = {
@@ -13,7 +14,13 @@ export default class View extends Component {
   };
 
   onResize = (evt) => {
-    this.setState({w: evt.w, h: evt.h});
+    this.setState({resize: true});
+  }
+
+  componentDidUpdate() {
+    if (this.state.resize) {
+      this.setState({resize: false});
+    }
   }
 
   render() {
@@ -21,7 +28,7 @@ export default class View extends Component {
       <div className="view-container">
         <div className="view-header">{this.props.type}</div>
         <div className="view-main">
-          {React.createElement(Views[this.props.type], {w: this.state.w, h: this.state.h})}
+          {React.createElement(Views[this.props.type], {resize: this.state.resize, ...this.props})}
         </div>
       </div>
     );

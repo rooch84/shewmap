@@ -4,6 +4,9 @@ import PropTypes from 'prop-types';
 import d3 from 'd3';
 import { initalizeToolip } from './modules/spc_map/src/tooltip.js';
 import * as gridmap from './modules/spc_map/src/gridmap.js';
+import * as Const from '../util/constants.js';
+import FontIcon from 'material-ui/FontIcon';
+
 const Data = new Mongo.Collection('gridData');
 
 class GridMap extends Component {
@@ -16,9 +19,7 @@ class GridMap extends Component {
     super(props);
 
     this.state = {
-
       initRender: false,
-      resize: false
     }
   };
 
@@ -32,12 +33,20 @@ class GridMap extends Component {
   }
 
   componentWillUpdate(nextProps, nextState) {
-    if (nextProps.gridData._id !== this.props.gridData._id && nextProps.ready) {
-      this.setState({initRender: true});
-    }
 
-    if (nextProps.w != this.props.w || nextProps.h != this.props.h) {
-      this.setState({resize: true});
+    if (nextProps.ready) {
+      if (nextProps.gridData._id !== this.props.gridData._id) {
+        this.setState({initRender: true});
+      }
+
+      if (nextProps.opacity !== this.props.opacity) {
+          gridmap.setOpacity(this.gridMapContainer, nextProps.opacity);
+      }
+
+      if (nextProps.highlightedCell !== this.props.highlightedCell) {
+        gridmap.removeHighlight(this.gridMapContainer, "." + this.props.highlightedCell);
+        gridmap.addHighlight(this.gridMapContainer, "." + nextProps.highlightedCell);
+      }
     }
   }
 
@@ -47,7 +56,7 @@ class GridMap extends Component {
 
       let npuColours = d3.scaleOrdinal()
       .domain(d3.map(smwgData, function(d){return d.NPU;}).keys())
-      .range(["#197F8E", "#B33355", "#02B395",  "#A3CD00", "#FF6529",  "#1E425C", "#E62A3D", "#FFBA00"]);
+      .range(Const.npuColours);
 
       let popColours = d3.scaleLinear()
       .domain(d3.extent(smwgData, function(d) { return +d.pop2011}))
@@ -66,24 +75,39 @@ class GridMap extends Component {
         strokeColour : function (d) { return "#FFFFFF";},
         offsetX: 1,
         offsetY: 0,
-        opacity: opacity
+        opacity: this.props.opacity,
+        cellHoverHandler: this.props.handleHightedCell,
+        cellSelectionHandler: this.props.handleCellSelection,
+        cellDeselectionHandler: this.props.handleCellDeselection,
+      });
+
+      let signals = this.props.signals;
+      let container = this.gridMapContainer;
+      this.props.data.forEach(function(d) {
+
+        //gridmap.addSignalsAsColourOnly({container: ".grid", cell: "." + d.key, signalData: properties[d.key], today: today});
+        gridmap.processesAsBackgroundShade({container: container, cell: "." + d.key, signalData: signals[d.key],
+          data: d.values, minY: d.min, maxY: d.max, meanLine: true});
+        gridmap.addSignalsAsIcons({container: container, cell: "." + d.key, signalData: signals[d.key], today: d3.timeParse("%m-%Y")(1 + "-" + 2016), opacity: 0.8});
+        //gridmap.addSignalsAsGlyphsAngleAsMean({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, today: today, opacity: 0.8, signalDescriptors: signalDescriptors});
+        //gridmap.addSignalsAsTrendChannel({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, signalDescriptors: signalDescriptors});
       });
 
       this.setState({initRender: false});
     }
 
-    if (this.state.resize) {
+    if (this.props.resize && this.props.ready) {
       gridmap.resize(this.gridMapContainer);
-      this.setState({resize: false});
     }
   }
 
   render() {
 
     return (
-      <div className="component-container" ref={ (gridMapContainer) => this.gridMapContainer = gridMapContainer}  >
-
-      </div>
+      <React.Fragment>
+        <div className="component-container" ref={ (gridMapContainer) => this.gridMapContainer = gridMapContainer} ></div>
+        <FontIcon className="selectionLock material-icons">{this.props.selectionLocked ? "lock_outline" : "lock_open"}</FontIcon>
+      </React.Fragment>
     );
   }
 }
