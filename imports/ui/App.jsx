@@ -50,30 +50,40 @@ class App extends Component {
       rowHeight: 0,
       rows: 18,
       space: 11,
+      bgEnabled: true,
       bgOpacity: 0.2,
       highlightedCell: "",
       signals: {},
       selectionLocked: false,
+      signalEnabled: true,
       signalType: "icon",
       signalOpacity: 0.8,
       signalColour: "#FFF",
       signalBelowColour: "#0571b0",
       signalAboveColour: "#ca0020",
       bivariateSignalColours: true,
-
+      processEnabled: true,
+      processOpacity: 0.3,
+      stateToChange: "",
+      gaugeEnabled: true,
+      gaugeOpacity: 0.8,
+      gaugeException: true,
+      gaugeColour: "#999",
+      trendEnabled: true,
+      trendHeight: 0.1,
+      trendOverride: false,
     }
   };
 
   handleLeftOpen = () => this.setState({leftOpen: true});
   handleRightOpen = () => this.setState({rightOpen: true});
 
-  onBgOpacityChange = (e, v) => this.setState({bgOpacity: v});
-  onSignalOpacityChange = (e, v) => this.setState({signalOpacity: v});
-  onSignalTypeChange = (e, v) => this.setState({signalType: v});
-  onSignalColourChange = (v) => {this.setState({signalColour: v.hex})};
-  onSignalAboveColourChange = (v) => {this.setState({signalAboveColour: v.hex})};
-  onSignalBelowColourChange = (v) => {this.setState({signalBelowColour: v.hex})};
-  onBivariateSignalColoursChange = (evt, v) => {this.setState({bivariateSignalColours: v})};
+  onColourChange = (k) => {
+    return function(v) { this.setState({[k]:  v.hex}) }.bind(this);
+  }
+  onConfigChange = (k) => {
+    return function(e, v) { this.setState({[k]:  v}) }.bind(this);
+  }
 
   onCellHightlight = (cell) => {
     if (!this.state.selectionLocked) {
@@ -157,20 +167,25 @@ class App extends Component {
             width={350}
             >
             <Configurator
-              bgOpacityChangeHandler={this.onBgOpacityChange}
-              bgOpacity={this.state.bgOpacity}
-              signalTypeChangeHandler={this.onSignalTypeChange}
-              signalType={this.state.signalType}
-              signalOpacityChangeHandler={this.onSignalOpacityChange}
-              signalOpacity={this.state.signalOpacity}
-              signalColourChangeHandler={this.onSignalColourChange}
-              signalColour={this.state.signalColour}
-              signalBelowColourChangeHandler={this.onSignalBelowColourChange}
-              signalAboveColourChangeHandler={this.onSignalAboveColourChange}
-              bivariateSignalColoursChangeHandler={this.onBivariateSignalColoursChange}
-              signalBelowColour={this.state.signalBelowColour}
-              signalAboveColour={this.state.signalAboveColour}
-              bivariateSignalColours={this.state.bivariateSignalColours}
+              bgEnabledChangeHandler={this.onConfigChange("bgEnabled")}
+              bgOpacityChangeHandler={this.onConfigChange("bgOpacity")}
+              signalEnabledChangeHandler={this.onConfigChange("signalEnabled")}
+              signalTypeChangeHandler={this.onConfigChange("signalType")}
+              signalOpacityChangeHandler={this.onConfigChange("signalOpacity")}
+              signalColourChangeHandler={this.onColourChange("signalColour")}
+              signalBelowColourChangeHandler={this.onColourChange("signalBelowColour")}
+              signalAboveColourChangeHandler={this.onColourChange("signalAboveColour")}
+              bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
+              processEnabledChangeHandler={this.onConfigChange("processEnabled")}
+              processOpacityChangeHandler={this.onConfigChange("processOpacity")}
+              gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
+              gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
+              gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}
+              gaugeColourChangeHandler={this.onColourChange("gaugeColour")}
+              trendEnabledChangeHandler={this.onConfigChange("trendEnabled")}
+              trendHeightChangeHandler={this.onConfigChange("trendHeight")}
+              trendOverrideChangeHandler={this.onConfigChange("trendOverride")}
+              {...canvasProps}
               />
           </Drawer>
           <Drawer

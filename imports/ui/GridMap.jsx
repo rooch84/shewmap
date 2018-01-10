@@ -50,6 +50,17 @@ class GridMap extends Component {
 
       if (this.state.initRender == 2) {
         if (nextProps.signalOpacity !== this.props.signalOpacity ||
+          nextProps.processOpacity !== this.props.processOpacity ||
+          nextProps.processEnabled !== this.props.processEnabled ||
+          nextProps.trendEnabled !== this.props.trendEnabled ||
+          nextProps.trendHeight !== this.props.trendHeight ||
+          nextProps.trendOverride !== this.props.trendOverride ||
+          nextProps.signalEnabled !== this.props.signalEnabled ||
+          nextProps.gaugeEnabled !== this.props.gaugeEnabled ||
+          nextProps.gaugeException !== this.props.gaugeException ||
+          nextProps.gaugeOpacity !== this.props.gaugeOpacity ||
+          nextProps.gaugeColour !== this.props.gaugeColour ||
+          nextProps.bgEnabled !== this.props.bgEnabled ||
           nextProps.bivariateSignalColours !== this.props.bivariateSignalColours ||
           nextProps.signalType !== this.props.signalType ||
           nextProps.signalColour !== this.props.signalColour ||
@@ -66,45 +77,81 @@ class GridMap extends Component {
       let container = this.gridMapContainer;
       props.data.forEach(function(d) {
         gridmap.clearCell({container: container, cell: "." + d.key} );
-        gridmap.processesAsBackgroundShade({
-          container: container,
-          cell: "." + d.key,
-          signalData: signals[d.key],
-          data: d.values,
-          minY: d.min,
-          maxY: d.max,
-          meanLine: true
-        });
-        if (props.signalType === "icon") {
-          gridmap.addSignalsAsIcons({
+
+        if (props.signalEnabled && !props.trendOverride) {
+          if (props.signalType === "icon") {
+            gridmap.addSignalsAsIcons({
+              container: container,
+              cell: "." + d.key,
+              signalData: signals[d.key],
+              today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
+              opacity: props.signalOpacity,
+              colour: props.signalColour,
+              posColour: props.signalAboveColour,
+              negColour: props.signalBelowColour,
+              bivariate: props.bivariateSignalColours,
+              colourOverride: true,
+              margin: props.trendEnabled ? props.trendHeight : 0
+            });
+          } else {
+            gridmap.addSignalsAsColourOnly({
+              container: container,
+              cell: "." + d.key,
+              signalData: signals[d.key],
+              today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
+              opacity: props.signalOpacity,
+              colour: props.signalColour,
+              posColour: props.signalAboveColour,
+              negColour: props.signalBelowColour,
+              bivariate: props.bivariateSignalColours,
+              colourOverride: true
+            });
+          }
+        }
+
+        if (props.processEnabled && !props.trendOverride) {
+          gridmap.processesAsBackgroundShade({
             container: container,
             cell: "." + d.key,
             signalData: signals[d.key],
-            today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
-            opacity: props.signalOpacity,
-            colour: props.signalColour,
-            posColour: props.signalAboveColour,
-            negColour: props.signalBelowColour,
-            bivariate: props.bivariateSignalColours,
-            colourOverride: true
+            data: d.values,
+            minY: d.min,
+            maxY: d.max,
+            meanLine: true,
+            opacity: props.processOpacity,
+            margin: props.trendEnabled ? props.trendHeight : 0
           });
-        } else {
-          gridmap.addSignalsAsColourOnly({
+        }
+
+        if (props.gaugeEnabled && !props.trendOverride) {
+          gridmap.addSignalsAsGlyphsAngleAsMean({
             container: container,
             cell: "." + d.key,
             signalData: signals[d.key],
+            data: d.values,
             today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
-            opacity: props.signalOpacity,
-            colour: props.signalColour,
+            opacity: props.gaugeOpacity,
+            exception: props.gaugeException,
+            strokeColour: props.gaugeColour,
             posColour: props.signalAboveColour,
-            negColour: props.signalBelowColour,
-            bivariate: props.bivariateSignalColours,
-            colourOverride: true
+            negColour: props.signalBelowColour
           });
+        }
+
+        if (props.trendEnabled) {
+          gridmap.addSignalsAsTrendChannel({
+            container: container,
+            cell: "." + d.key,
+            signalData: signals[d.key],
+            data: d.values,
+            size: !props.trendOverride ? props.trendHeight : 0.5
+          });
+
         }
         //gridmap.addSignalsAsGlyphsAngleAsMean({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, today: today, opacity: 0.8, signalDescriptors: signalDescriptors});
         //gridmap.addSignalsAsTrendChannel({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, signalDescriptors: signalDescriptors});
       });
+
     }
 
     componentDidUpdate() {
