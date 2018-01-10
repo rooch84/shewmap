@@ -30,8 +30,8 @@ class GeoMap extends Component {
         this.setState({initRender: true});
       }
 
-      if (nextProps.opacity !== this.props.opacity) {
-          geo.setOpacity(this.geoMapContainer, nextProps.opacity);
+      if (nextProps.bgOpacity !== this.props.bgOpacity) {
+          geo.setOpacity(this.geoMapContainer, nextProps.bgOpacity);
       }
 
       if (nextProps.highlightedCell !== this.props.highlightedCell) {
@@ -63,7 +63,7 @@ class GeoMap extends Component {
         highlight: function(){},
         colourScale: type === "NPU" ? npuColours : popColours,
         colourAttribute: type,
-        opacity: this.props.opacity,
+        opacity: this.props.bgOpacity,
         cellHoverHandler: this.props.handleHightedCell,
       });
 

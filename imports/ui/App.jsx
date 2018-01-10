@@ -14,6 +14,32 @@ import * as util from '../util/util.js';
 
 const Data = new Mongo.Collection('demo');
 
+const signalDescriptors = spc.SIGNALS;
+signalDescriptors.EIGHT_OVER_MEAN.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createCircle(size, x, y, container, "spc__icon", colours[0]);
+}
+signalDescriptors.EIGHT_UNDER_MEAN.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createCircle(size, x, y, container, "spc__icon", colours[1]);
+}
+signalDescriptors.THREE_OVER_ONE_FIVE.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createTriangle(size, x, y, container, "spc__icon", colours[0]);
+}
+signalDescriptors.THREE_UNDER_ONE_FIVE.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createTriangle(size, x, y, container, "spc__icon", colours[1]);
+}
+signalDescriptors.TWO_OVER_TWO.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createDiamond(size, x, y, container, "spc__icon", colours[0]);
+}
+signalDescriptors.TWO_UNDER_TWO.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createDiamond(size, x, y, container, "spc__icon", colours[1]);
+}
+signalDescriptors.ONE_OVER_THREE.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createCross(size, x, y, container, "spc__icon", colours[0]);
+}
+signalDescriptors.ONE_UNDER_THREE.shape = function (container, x, y, size, colours = ["",""]) {
+  spc.createCross(size, x, y, container, "spc__icon", colours[1]);
+}
+
 class App extends Component {
 
   constructor(props) {
@@ -21,20 +47,34 @@ class App extends Component {
 
     this.state = {
       leftOpen: false,
-      canvasRowHeight: 0,
+      rowHeight: 0,
       rows: 18,
       space: 11,
-      opacity: 0.2,
+      bgOpacity: 0.2,
       highlightedCell: "",
       signals: {},
       selectionLocked: false,
+      signalType: "icon",
+      signalOpacity: 0.8,
+      signalColour: "#FFF",
+      signalBelowColour: "#0571b0",
+      signalAboveColour: "#ca0020",
+      bivariateSignalColours: true,
+
     }
   };
 
   handleLeftOpen = () => this.setState({leftOpen: true});
   handleRightOpen = () => this.setState({rightOpen: true});
 
-  onOpacityChange = (evt, v) => this.setState({opacity: v});
+  onBgOpacityChange = (e, v) => this.setState({bgOpacity: v});
+  onSignalOpacityChange = (e, v) => this.setState({signalOpacity: v});
+  onSignalTypeChange = (e, v) => this.setState({signalType: v});
+  onSignalColourChange = (v) => {this.setState({signalColour: v.hex})};
+  onSignalAboveColourChange = (v) => {this.setState({signalAboveColour: v.hex})};
+  onSignalBelowColourChange = (v) => {this.setState({signalBelowColour: v.hex})};
+  onBivariateSignalColoursChange = (evt, v) => {this.setState({bivariateSignalColours: v})};
+
   onCellHightlight = (cell) => {
     if (!this.state.selectionLocked) {
       this.setState({highlightedCell: cell});
@@ -52,9 +92,9 @@ class App extends Component {
   componentDidUpdate() {
     if (this.props.ready) {
       const height = this.gridContainer.clientHeight;
-      const rowHeight = height / this.state.rows - this.state.space;
-      if (this.state.canvasRowHeight !== rowHeight)
-      this.setState({ canvasRowHeight: rowHeight });  // Abitary values, bit of a hack.
+      const _rowHeight = height / this.state.rows - this.state.space;
+      if (this.state.rowHeight !== _rowHeight)
+      this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
       if (util.isEmpty(this.state.signals)) {
         var month = 7;
         var year = 2014;//2012;
@@ -75,8 +115,13 @@ class App extends Component {
           while(d.values[i].Date <= today) {
             i++;
           }
+
           d.values.splice(i, d.values.length);
-          spc.getSignals(d.values, properties[d.key] = {"autoDetectProcess" : true, "autoDetectUntil" : autoDetectCap});
+          spc.getSignals(d.values, properties[d.key] = {
+            "autoDetectProcess" : true,
+            "autoDetectUntil" : autoDetectCap,
+            "signalDescriptors": signalDescriptors,
+          });
           d.max = d3.max(properties[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
           d.min = d3.min(properties[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
           d.mean = d3.mean(d.values, function(d1) { return d1.Count});
@@ -87,6 +132,7 @@ class App extends Component {
   }
 
   render() {
+    let {leftOpen, space, ...canvasProps}  = this.state;
     if (!this.props.ready) return <span></span>
     return (
       <MuiThemeProvider>
@@ -108,10 +154,23 @@ class App extends Component {
             docked={false}
             open={this.state.leftOpen}
             onRequestChange={(leftOpen) => this.setState({leftOpen})}
+            width={350}
             >
             <Configurator
-              opacityChangeHandler={this.onOpacityChange}
-              opacity={this.state.opacity}
+              bgOpacityChangeHandler={this.onBgOpacityChange}
+              bgOpacity={this.state.bgOpacity}
+              signalTypeChangeHandler={this.onSignalTypeChange}
+              signalType={this.state.signalType}
+              signalOpacityChangeHandler={this.onSignalOpacityChange}
+              signalOpacity={this.state.signalOpacity}
+              signalColourChangeHandler={this.onSignalColourChange}
+              signalColour={this.state.signalColour}
+              signalBelowColourChangeHandler={this.onSignalBelowColourChange}
+              signalAboveColourChangeHandler={this.onSignalAboveColourChange}
+              bivariateSignalColoursChangeHandler={this.onBivariateSignalColoursChange}
+              signalBelowColour={this.state.signalBelowColour}
+              signalAboveColour={this.state.signalAboveColour}
+              bivariateSignalColours={this.state.bivariateSignalColours}
               />
           </Drawer>
           <Drawer
@@ -124,16 +183,13 @@ class App extends Component {
           </Drawer>
           <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
             <Canvas
-              highlightedCell={this.state.highlightedCell}
+              data={this.props.data.data}
               handleHightedCell={this.onCellHightlight}
               handleCellSelection={this.onCellSelection}
               handleCellDeselection={this.onCellDeselection}
-              selectionLocked={this.state.selectionLocked}
-              data={this.props.data.data}
-              signals={this.state.signals}
-              opacity={this.state.opacity}
-              rowHeight={this.state.canvasRowHeight}
-              rows={this.state.rows} />
+              {...canvasProps}
+              />
+
           </div>
         </div>
       </MuiThemeProvider>

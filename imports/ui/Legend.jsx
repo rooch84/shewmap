@@ -17,8 +17,8 @@ class Legend extends Component {
 
   componentWillUpdateProps(nextProps) {
     if (this.props.ready) {
-      if (nextProps.opacity != this.props.opacity) {
-        legend.setOpacity(this.legendElement, nextProps.opacity);
+      if (nextProps.bgOpacity != this.props.bgOpacity) {
+        legend.setOpacity(this.legendElement, nextProps.bgOpacity);
       }
     }
   }
@@ -38,7 +38,7 @@ class Legend extends Component {
 
   drawLegend() {
     d3.select(this.legendElement).html("");
-    legend.draw(this.legendElement, "discreet", this.npuColourScale, this.props.opacity);
+    legend.draw(this.legendElement, "discreet", this.npuColourScale, this.props.bgOpacity);
   }
 
   render() {
