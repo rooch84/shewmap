@@ -8,11 +8,15 @@ import IconButton from 'material-ui/IconButton';
 import FontIcon from 'material-ui/FontIcon';
 import * as d3 from 'd3';
 import * as spc from '@valcri/spc-sd'
+
 import Canvas from './Canvas.jsx';
 import Configurator from './Configurator.jsx';
+import Menu from './Menu.jsx';
 import * as util from '../util/util.js';
+import {Profiles} from '../api/profiles.js';
 
 const Data = new Mongo.Collection('demo');
+const GridData = new Mongo.Collection('gridData');
 
 const signalDescriptors = spc.SIGNALS;
 signalDescriptors.EIGHT_OVER_MEAN.shape = function (container, x, y, size, colours = ["",""]) {
@@ -50,28 +54,10 @@ class App extends Component {
       rowHeight: 0,
       rows: 18,
       space: 11,
-      bgEnabled: true,
-      bgOpacity: 0.2,
       highlightedCell: "",
-      signals: {},
       selectionLocked: false,
-      signalEnabled: true,
-      signalType: "icon",
-      signalOpacity: 0.8,
-      signalColour: "#FFF",
-      signalBelowColour: "#0571b0",
-      signalAboveColour: "#ca0020",
-      bivariateSignalColours: true,
-      processEnabled: true,
-      processOpacity: 0.3,
-      stateToChange: "",
-      gaugeEnabled: true,
-      gaugeOpacity: 0.8,
-      gaugeException: true,
-      gaugeColour: "#999",
-      trendEnabled: true,
-      trendHeight: 0.1,
-      trendOverride: false,
+      signals: {},
+      data:[],
     }
   };
 
@@ -79,10 +65,10 @@ class App extends Component {
   handleRightOpen = () => this.setState({rightOpen: true});
 
   onColourChange = (k) => {
-    return function(v) { this.setState({[k]:  v.hex}) }.bind(this);
+    return function(v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v.hex}); }.bind(this);
   }
   onConfigChange = (k) => {
-    return function(e, v) { this.setState({[k]:  v}) }.bind(this);
+    return function(e, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
   }
 
   onCellHightlight = (cell) => {
@@ -95,16 +81,22 @@ class App extends Component {
     this.setState({highlightedCell: cell, selectionLocked: true});
   }
 
+  onSelectionModeChange = () => {
+    this.setState({selectionLocked: !this.state.selectionLocked});
+  }
+
   onCellDeselection = (cell) => {
     this.setState({selectionLocked: false});
   }
 
   componentDidUpdate() {
-    if (this.props.ready) {
-      const height = this.gridContainer.clientHeight;
-      const _rowHeight = height / this.state.rows - this.state.space;
-      if (this.state.rowHeight !== _rowHeight)
-      this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
+    if (this.props.dataReady) {
+      if (this.props.profile !== undefined) {
+        const height = this.gridContainer.clientHeight;
+        const _rowHeight = height / this.state.rows - this.state.space;
+        if (this.state.rowHeight !== _rowHeight)
+        this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
+      }
       if (util.isEmpty(this.state.signals)) {
         var month = 7;
         var year = 2014;//2012;
@@ -136,14 +128,15 @@ class App extends Component {
           d.min = d3.min(properties[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
           d.mean = d3.mean(d.values, function(d1) { return d1.Count});
         });
-        this.setState({signals: properties});
+        this.setState({signals: properties, data: this.props.data.data});
       }
     }
   }
 
   render() {
+    if (!this.props.dataReady || !this.props.gridDataReady) return <span></span>
     let {leftOpen, space, ...canvasProps}  = this.state;
-    if (!this.props.ready) return <span></span>
+    let {_id, userId, name, createdAt, lastAccessed, ...configSettings} = this.props.profile ? this.props.profile : {};
     return (
       <MuiThemeProvider>
         <div className="container">
@@ -166,61 +159,101 @@ class App extends Component {
             onRequestChange={(leftOpen) => this.setState({leftOpen})}
             width={350}
             >
-            <Configurator
-              bgEnabledChangeHandler={this.onConfigChange("bgEnabled")}
-              bgOpacityChangeHandler={this.onConfigChange("bgOpacity")}
-              signalEnabledChangeHandler={this.onConfigChange("signalEnabled")}
-              signalTypeChangeHandler={this.onConfigChange("signalType")}
-              signalOpacityChangeHandler={this.onConfigChange("signalOpacity")}
-              signalColourChangeHandler={this.onColourChange("signalColour")}
-              signalBelowColourChangeHandler={this.onColourChange("signalBelowColour")}
-              signalAboveColourChangeHandler={this.onColourChange("signalAboveColour")}
-              bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
-              processEnabledChangeHandler={this.onConfigChange("processEnabled")}
-              processOpacityChangeHandler={this.onConfigChange("processOpacity")}
-              gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
-              gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
-              gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}
-              gaugeColourChangeHandler={this.onColourChange("gaugeColour")}
-              trendEnabledChangeHandler={this.onConfigChange("trendEnabled")}
-              trendHeightChangeHandler={this.onConfigChange("trendHeight")}
-              trendOverrideChangeHandler={this.onConfigChange("trendOverride")}
-              {...canvasProps}
-              />
+            {this.renderConfigurator(configSettings)}
           </Drawer>
           <Drawer
             docked={false}
             openSecondary={true}
             open={this.state.rightOpen}
             onRequestChange={(rightOpen) => this.setState({rightOpen})}
+            width={350}
             >
-            Hiss
+            <Menu />
           </Drawer>
-          <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
-            <Canvas
-              data={this.props.data.data}
-              handleHightedCell={this.onCellHightlight}
-              handleCellSelection={this.onCellSelection}
-              handleCellDeselection={this.onCellDeselection}
-              {...canvasProps}
-              />
-
-          </div>
+          {this.renderMain(configSettings)}
         </div>
       </MuiThemeProvider>
     );
+  }
+
+  renderConfigurator(configSettings) {
+    if (!this.props.profile) return (<span></span>)
+    return (
+      <Configurator
+        bgEnabledChangeHandler={this.onConfigChange("bgEnabled")}
+        bgOpacityChangeHandler={this.onConfigChange("bgOpacity")}
+        signalEnabledChangeHandler={this.onConfigChange("signalEnabled")}
+        signalTypeChangeHandler={this.onConfigChange("signalType")}
+        signalOpacityChangeHandler={this.onConfigChange("signalOpacity")}
+        signalColourChangeHandler={this.onColourChange("signalColour")}
+        signalBelowColourChangeHandler={this.onColourChange("signalBelowColour")}
+        signalAboveColourChangeHandler={this.onColourChange("signalAboveColour")}
+        bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
+        processEnabledChangeHandler={this.onConfigChange("processEnabled")}
+        processOpacityChangeHandler={this.onConfigChange("processOpacity")}
+        gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
+        gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
+        gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}
+        gaugeColourChangeHandler={this.onColourChange("gaugeColour")}
+        trendEnabledChangeHandler={this.onConfigChange("trendEnabled")}
+        trendHeightChangeHandler={this.onConfigChange("trendHeight")}
+        trendOverrideChangeHandler={this.onConfigChange("trendOverride")}
+        {...configSettings}
+        />
+    )
+  }
+
+  renderMain(props) {
+    if (!Meteor.userId()) {
+      return (<div>Please Login</div>)
+    } else if (!this.props.profileReady) {
+      return (<span></span>)
+    } else if (this.props.profile === undefined) {
+      return (<div>Create a profile to start</div>)
+    } else {
+      return(
+        <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
+          <Canvas
+            data={this.state.data}
+            handleHightedCell={this.onCellHightlight}
+            handleCellSelection={this.onCellSelection}
+            handleCellDeselection={this.onCellDeselection}
+            handleSelectionModeChange={this.onSelectionModeChange}
+            {...props}
+            data={this.state.data}
+            signals={this.state.signals}
+            rowHeight={this.state.rowHeight}
+            rows={this.state.rows}
+            highlightedCell={this.state.highlightedCell}
+            highlightedCell={this.state.highlightedCell}
+            gridData={d3.csvParse(this.props.gridData._id)}
+            selectionLocked={this.state.selectionLocked}
+            />
+        </div>
+      )
+    }
   }
 }
 
 App.propTypes = {
   data: PropTypes.object,
-  ready: PropTypes.bool.isRequired,
+  profile: PropTypes.object,
+  gridData: PropTypes.object,
+  profileReady: PropTypes.bool.isRequired,
+  dataReady: PropTypes.bool.isRequired,
+  gridDataReady: PropTypes.bool.isRequired,
 };
 
 export default withTracker((props) => {
-  const handler = Meteor.subscribe('demo');
+  const handler1 = Meteor.subscribe('demo');
+  const handler2 = Meteor.subscribe('profiles');
+  const handler3 = Meteor.subscribe('gridData');
   return {
-    ready: handler.ready(),
+    dataReady: handler1.ready(),
+    profileReady: handler2.ready(),
+    gridDataReady: handler3.ready(),
     data: Data.findOne({_id: "crime"}),
+    profile: Profiles.findOne({userId: Meteor.userId, name: { $ne: "default" }}, { sort: { lastAccessed: -1 }}),
+    gridData: GridData.findOne(),
   };
 })(App);

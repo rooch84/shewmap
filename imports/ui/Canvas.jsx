@@ -32,7 +32,7 @@ export default class App extends Component {
       {i: 'GridMap', x: 0, y: 0, w: 15, h: 12},
       {i: 'GeoMap', x: 15, y: 0, w: 5, h: 6},
       {i: 'Spc', x: 0, y: 12, w: 15, h: 6},
-      {i: 'Cell', x: 15, y: 12, w: 5, h: 6},
+      {i: 'Meta', x: 15, y: 12, w: 5, h: 6},
       {i: 'Legend', x: 15, y: 6, w: 5, h: 6}
     ];
     return layout.map( (l) => {

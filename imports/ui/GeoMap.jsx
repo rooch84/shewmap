@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { withTracker } from 'meteor/react-meteor-data';
 import PropTypes from 'prop-types';
 import d3 from 'd3';
-import { initalizeToolip } from './modules/spc_map/src/tooltip.js';
 import * as geo from './modules/spc_map/src/geomap.js';
 import * as Const from '../util/constants.js';
 
@@ -59,7 +58,7 @@ class GeoMap extends Component {
       geo.draw({
         data: this.geoData,
         container: this.geoMapContainer,
-        tooltip: initalizeToolip('body'),
+        tooltip: null,
         highlight: function(){},
         colourScale: type === "NPU" ? npuColours : popColours,
         colourAttribute: type,

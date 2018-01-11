@@ -90,12 +90,14 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">1</span>
         </div>
         <div className="config-item-row">
-          <span>Opacity: </span><span>{this.props.bgOpacity.toFixed(2)}</span>
+          <span className="config-item__row-item">Opacity: </span>
+          <span className="config-item__row-item">{this.props.bgOpacity.toFixed(2)}</span>
         </div>
       </ConfigItem>,
 
       <ConfigItem key="2" title="Signals" enabled={this.props.signalEnabled} enabledChangeHander={this.props.signalEnabledChangeHandler}>
         <RadioButtonGroup
+          className="config-item__row-item"
           name="signalType"
           valueSelected={this.props.signalType}
           onChange={this.props.signalTypeChangeHandler}
@@ -110,12 +112,14 @@ export default class Configurator extends Component {
             label="Fill"
             />
         </RadioButtonGroup>
-        <Toggle
-          style={{textAlign: "left"}}
-          label="Use bivariate colour scale"
-          toggled={this.props.bivariateSignalColours}
-          onToggle={this.props.bivariateSignalColoursChangeHandler}
-          />
+        <div className="config-item__row-item">
+          <Toggle
+            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            label="Use bivariate colour scale"
+            toggled={this.props.bivariateSignalColours}
+            onToggle={this.props.bivariateSignalColoursChangeHandler}
+            />
+        </div>
         { this.signalColours() }
         <div className="config-item-row">
           <span className="config-item__row-item">0</span>
@@ -129,7 +133,8 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">1</span>
         </div>
         <div className="config-item-row">
-          <span>Opacity: </span><span>{this.props.signalOpacity.toFixed(2)}</span>
+          <span className="config-item__row-item">Opacity: </span>
+          <span className="config-item__row-item">{this.props.signalOpacity.toFixed(2)}</span>
         </div>
       </ConfigItem>,
 
@@ -146,7 +151,8 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">1</span>
         </div>
         <div className="config-item-row">
-          <span>Opacity: </span><span>{this.props.processOpacity.toFixed(2)}</span>
+          <span className="config-item__row-item">Opacity: </span>
+          <span className="config-item__row-item">{this.props.processOpacity.toFixed(2)}</span>
         </div>
 
       </ConfigItem>,
@@ -164,33 +170,38 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">1</span>
         </div>
         <div className="config-item-row">
-          <span>Opacity: </span><span>{this.props.gaugeOpacity.toFixed(2)}</span>
+          <span className="config-item__row-item">Opacity: </span>
+          <span className="config-item__row-item">{this.props.gaugeOpacity.toFixed(2)}</span>
         </div>
-        <Toggle
-          style={{textAlign: "left"}}
-          label="Highlight extended signals"
-          toggled={this.props.gaugeException}
-          onToggle={this.props.gaugeExceptionChangeHandler}
-          />
-          <div className="config-item-row">
-            <span className="config-item__row-item">Colour: </span>
-            <div
-              className="config-item__row-item colour-picker-button"
-              style={{"backgroundColor": this.props.gaugeColour}}
-              onClick={(e) => {this.setState({colourPickerColour: "gaugeColour"}); this.handlePopoverOpenClick(e, this.props.gaugeColourChangeHandler)}}>
-            </div>
+        <div className="config-item__row-item">
+          <Toggle
+            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            label="Highlight extended signals"
+            toggled={this.props.gaugeException}
+            onToggle={this.props.gaugeExceptionChangeHandler}
+            />
+        </div>
+        <div className="config-item-row">
+          <span className="config-item__row-item">Colour: </span>
+          <div
+            className="config-item__row-item colour-picker-button"
+            style={{"backgroundColor": this.props.gaugeColour}}
+            onClick={(e) => {this.setState({colourPickerColour: "gaugeColour"}); this.handlePopoverOpenClick(e, this.props.gaugeColourChangeHandler)}}>
           </div>
+        </div>
       </ConfigItem>,
 
       <ConfigItem key="5" title="Trend Channels" enabled={this.props.trendEnabled} enabledChangeHander={this.props.trendEnabledChangeHandler}>
-        <Toggle
-          style={{textAlign: "left"}}
-          label="Fill"
-          toggled={this.props.trendOverride}
-          onToggle={this.props.trendOverrideChangeHandler}
-          />
+        <div className="config-item__row-item">
+          <Toggle
+            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            label="Fill"
+            toggled={this.props.trendOverride}
+            onToggle={this.props.trendOverrideChangeHandler}
+            />
+        </div>
         <div className="config-item-row">
-          <span className="config-item__row-item">0</span>
+          <span className="config-item__row-item">5%</span>
           <Slider
             min={0.05}
             max={0.3}
@@ -198,10 +209,10 @@ export default class Configurator extends Component {
             onChange={this.props.trendHeightChangeHandler}
             className="config-item__row-item config-item__row-item--grow"
             />
-          <span className="config-item__row-item">0.5</span>
+          <span className="config-item__row-item">30%</span>
         </div>
         <div className="config-item-row">
-          <span>Height: </span><span>{this.props.trendHeight.toFixed(2)*100}%</span>
+          <span>Height: </span><span>{(this.props.trendHeight * 100).toFixed(0)}%</span>
         </div>
       </ConfigItem>
     ]

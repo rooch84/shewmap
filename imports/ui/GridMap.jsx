@@ -2,24 +2,19 @@ import React, { Component } from 'react';
 import { withTracker } from 'meteor/react-meteor-data';
 import PropTypes from 'prop-types';
 import d3 from 'd3';
-import { initalizeToolip } from './modules/spc_map/src/tooltip.js';
 import * as gridmap from './modules/spc_map/src/gridmap.js';
 import * as Const from '../util/constants.js';
 import FontIcon from 'material-ui/FontIcon';
+import IconButton from 'material-ui/IconButton';
 
-const Data = new Mongo.Collection('gridData');
-
-class GridMap extends Component {
-
-  static defaultProps = {
-    gridData: {_id: ""},
-  };
+export default class GridMap extends Component {
 
   constructor(props) {
     super(props);
 
     this.state = {
       initRender: 0,
+      zoomMode: false
     }
   };
 
@@ -33,43 +28,48 @@ class GridMap extends Component {
   }
 
   componentWillUpdate(nextProps, nextState) {
+    if (nextProps.gridData !== this.props.gridData && this.state.initRender == 0) {
+      this.setState({initRender: 1});
+    }
 
-    if (nextProps.ready) {
-      if (nextProps.gridData._id !== this.props.gridData._id) {
-        this.setState({initRender: true});
-      }
+    if (nextProps.bgOpacity !== this.props.bgOpacity) {
+      gridmap.setOpacity(this.gridMapContainer, nextProps.bgOpacity);
+    }
 
-      if (nextProps.bgOpacity !== this.props.bgOpacity) {
-        gridmap.setOpacity(this.gridMapContainer, nextProps.bgOpacity);
-      }
+    if (nextProps.highlightedCell !== this.props.highlightedCell) {
+      gridmap.removeHighlight(this.gridMapContainer, "." + this.props.highlightedCell);
+      gridmap.addHighlight(this.gridMapContainer, "." + nextProps.highlightedCell);
+    }
 
-      if (nextProps.highlightedCell !== this.props.highlightedCell) {
-        gridmap.removeHighlight(this.gridMapContainer, "." + this.props.highlightedCell);
-        gridmap.addHighlight(this.gridMapContainer, "." + nextProps.highlightedCell);
-      }
-
-      if (this.state.initRender == 2) {
-        if (nextProps.signalOpacity !== this.props.signalOpacity ||
-          nextProps.processOpacity !== this.props.processOpacity ||
-          nextProps.processEnabled !== this.props.processEnabled ||
-          nextProps.trendEnabled !== this.props.trendEnabled ||
-          nextProps.trendHeight !== this.props.trendHeight ||
-          nextProps.trendOverride !== this.props.trendOverride ||
-          nextProps.signalEnabled !== this.props.signalEnabled ||
-          nextProps.gaugeEnabled !== this.props.gaugeEnabled ||
-          nextProps.gaugeException !== this.props.gaugeException ||
-          nextProps.gaugeOpacity !== this.props.gaugeOpacity ||
-          nextProps.gaugeColour !== this.props.gaugeColour ||
-          nextProps.bgEnabled !== this.props.bgEnabled ||
-          nextProps.bivariateSignalColours !== this.props.bivariateSignalColours ||
-          nextProps.signalType !== this.props.signalType ||
-          nextProps.signalColour !== this.props.signalColour ||
-          nextProps.signalAboveColour !== this.props.signalAboveColour ||
-          nextProps.signalBelowColour !== this.props.signalBelowColour) {
-            this.redraw(nextProps);
-          }
+    if (this.state.initRender == 2) {
+      if (nextProps.signalOpacity !== this.props.signalOpacity ||
+        nextProps.processOpacity !== this.props.processOpacity ||
+        nextProps.processEnabled !== this.props.processEnabled ||
+        nextProps.trendEnabled !== this.props.trendEnabled ||
+        nextProps.trendHeight !== this.props.trendHeight ||
+        nextProps.trendOverride !== this.props.trendOverride ||
+        nextProps.signalEnabled !== this.props.signalEnabled ||
+        nextProps.gaugeEnabled !== this.props.gaugeEnabled ||
+        nextProps.gaugeException !== this.props.gaugeException ||
+        nextProps.gaugeOpacity !== this.props.gaugeOpacity ||
+        nextProps.gaugeColour !== this.props.gaugeColour ||
+        nextProps.bgEnabled !== this.props.bgEnabled ||
+        nextProps.bivariateSignalColours !== this.props.bivariateSignalColours ||
+        nextProps.signalType !== this.props.signalType ||
+        nextProps.signalColour !== this.props.signalColour ||
+        nextProps.signalAboveColour !== this.props.signalAboveColour ||
+        nextProps.signalBelowColour !== this.props.signalBelowColour) {
+          this.redraw(nextProps);
         }
       }
+
+      if (nextState.zoomMode != this.state.zoomMode ) {
+        gridmap.toggleZoomMode(this.gridMapContainer, nextState.zoomMode);
+      }
+    }
+
+    handleZoomChange = () => {
+      this.setState({zoomMode: !this.state.zoomMode});
     }
 
     redraw(props) {
@@ -156,7 +156,7 @@ class GridMap extends Component {
 
     componentDidUpdate() {
       if (this.state.initRender == 1) {
-        let smwgData = d3.csvParse(this.props.gridData._id);
+        let smwgData = this.props.gridData;
 
         let npuColours = d3.scaleOrdinal()
         .domain(d3.map(smwgData, function(d){return d.NPU;}).keys())
@@ -173,7 +173,7 @@ class GridMap extends Component {
         gridmap.draw({
           data: data,
           container: this.gridMapContainer,
-          tooltip: initalizeToolip('body'),
+          tooltip: null,
           colourScale: type === "NPU" ? npuColours : popColours,
           colourAttribute: type,
           strokeColour : function (d) { return "#FFFFFF";},
@@ -184,13 +184,12 @@ class GridMap extends Component {
           cellSelectionHandler: this.props.handleCellSelection,
           cellDeselectionHandler: this.props.handleCellDeselection,
         });
-
         this.redraw(this.props);
 
         this.setState({initRender: 2});
       }
 
-      if (this.props.resize && this.props.ready) {
+      if (this.props.resize && this.state.initRender == 2) {
         gridmap.resize(this.gridMapContainer);
       }
     }
@@ -200,22 +199,11 @@ class GridMap extends Component {
       return (
         <React.Fragment>
           <div className="component-container" ref={ (gridMapContainer) => this.gridMapContainer = gridMapContainer} ></div>
-          <FontIcon className="selectionLock material-icons">{this.props.selectionLocked ? "lock_outline" : "lock_open"}</FontIcon>
+          <FontIcon onClick={this.props.handleSelectionModeChange}
+            className="selectionLock material-icons">{this.props.selectionLocked ? "lock_outline" : "lock_open"}</FontIcon>
+          <FontIcon onClick={this.handleZoomChange} className="zoomOrSelect material-icons">{this.state.zoomMode ? "pan_tool" : "search"}</FontIcon>
+
         </React.Fragment>
       );
     }
   }
-
-  GridMap.propTypes = {
-    gridData: PropTypes.object,
-    ready: PropTypes.bool.isRequired,
-
-  };
-
-  export default withTracker((props) => {
-    const handler = Meteor.subscribe('gridData');
-    return {
-      ready: handler.ready(),
-      gridData: Data.findOne(),
-    };
-  })(GridMap);

@@ -1,6 +1,7 @@
 html, body {
   font-family: 'robotoregular';
   height: 100%;
+  overflow: hidden;
 }
 
 #render-target {
@@ -15,6 +16,7 @@ html, body {
 
 .grid-container {
   flex-grow: 1;
+  overflow: scroll;
 }
 
 .view-container {
@@ -67,6 +69,14 @@ html, body {
   font-size: 1.4em !important;
 }
 
+.zoomOrSelect  {
+  position: absolute !important;
+  left: 25px;
+  bottom: 0px;
+  color: #CCC !important;
+  font-size: 1.4em !important;
+}
+
 .cell-view {
   margin: 10px;
 }
@@ -82,6 +92,7 @@ html, body {
 
 .config-item__row-item {
   align-self: center;
+  margin: 0px 5px 2px 5px;
 }
 
 .config-item__row-item--grow {
