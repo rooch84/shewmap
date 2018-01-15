@@ -2,8 +2,10 @@ import React, { Component } from 'react';
 import { withTracker } from 'meteor/react-meteor-data';
 import PropTypes from 'prop-types';
 import d3 from 'd3';
+
 import * as legend from './modules/spc_map/src/legend.js';
 import * as Const from '../util/constants.js';
+import View from './View.jsx';
 
 const Data = new Mongo.Collection('regions');
 
@@ -32,6 +34,7 @@ class Legend extends Component {
 
       if (this.props.resize) {
         this.drawLegend();
+        this.props.resizeComplete();
       }
     }
   }
@@ -43,8 +46,10 @@ class Legend extends Component {
 
   render() {
     return (
-      <div className="component-container" ref={ (e) => (this.legendElement = e)}>
-      </div>
+      <View name={this.props.type} container={this.legendElement} saveEnabled={true}>
+        <div className="component-container" ref={ (e) => (this.legendElement = e)}>
+        </div>
+      </View>
     );
   }
 }

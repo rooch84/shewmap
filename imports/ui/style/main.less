@@ -1,5 +1,5 @@
 html, body {
-  font-family: 'robotoregular';
+  font-family: 'robotoregular', sans-serif, arial;
   height: 100%;
   overflow: hidden;
 }
@@ -31,16 +31,17 @@ html, body {
   flex-grow: 0;
   flex-shrink: 0;
   color: white;
-  background-color: white;
-  transition: background-color 0.3s;
+  transition: opacity 0.3s;
   padding: 1px;
   font-family: robotolight;
   font-size: 0.8em;
   padding: 2px;
+  opacity: 0;
+  height: 30px !important;
 }
 
 .view-header:hover {
-  background-color: #AAA;
+  opacity: 1;
 }
 
 .view-main {
@@ -107,4 +108,14 @@ html, body {
 
 .popover {
   left: -31415px;
+}
+
+.header-button {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0px !important;
+}
+
+.toolbar-icon {
+  color: rgba(0, 0, 0, 0.4) !important;
 }

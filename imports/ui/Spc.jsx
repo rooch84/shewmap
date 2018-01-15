@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
+
 import * as d3 from 'd3';
 import * as spc from './modules/spc_chart/src/spc.js'
+import View from './View.jsx';
 
 export default class Spc extends Component {
 
@@ -28,13 +30,16 @@ export default class Spc extends Component {
   componentDidUpdate() {
     if (this.props.resize && this.state.rendered) {
       spc.resizeChart(this.spcElement, this.props.signals[this.props.highlightedCell]);
+      this.props.resizeComplete();
     }
   }
 
   render() {
     return (
-      <div className="component-container" ref={ (e) => this.spcElement = e} >
-      </div>
+      <View name={this.props.type} container={this.spcElement} saveEnabled={true}>
+        <div className="component-container" ref={ (e) => this.spcElement = e} >
+        </div>
+      </View>
     );
   }
 }

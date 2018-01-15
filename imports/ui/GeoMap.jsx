@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import d3 from 'd3';
 import * as geo from './modules/spc_map/src/geomap.js';
 import * as Const from '../util/constants.js';
+import View from './View.jsx';
 
 const Data = new Mongo.Collection('geoData');
 
@@ -30,14 +31,38 @@ class GeoMap extends Component {
       }
 
       if (nextProps.bgOpacity !== this.props.bgOpacity) {
-          geo.setOpacity(this.geoMapContainer, nextProps.bgOpacity);
+        geo.setOpacity(this.geoMapContainer, nextProps.bgOpacity);
       }
 
       if (nextProps.highlightedCell !== this.props.highlightedCell) {
         geo.removeHighlight(this.geoMapContainer, "." + this.props.highlightedCell);
         geo.addHighlight(this.geoMapContainer, "." + nextProps.highlightedCell);
       }
+
+      if (
+        nextProps.signalAboveColour !== this.props.signalAboveColour ||
+        nextProps.signalBelowColour !== this.props.signalBelowColour ||
+        nextProps.bgOpacity !== this.props.bgOpacity
+      ) {
+        this.redraw(nextProps);
+      }
     }
+  }
+
+  redraw = (props) => {
+    let container = this.geoMapContainer;
+    props.data.forEach(function(d) {
+      geo.resetCell({container: container, cell: "." + d.key} );
+
+      geo.addSignals({
+        container: container,
+        cell: "." + d.key,
+        signalData: props.signals[d.key],
+        today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
+        posColour: props.signalAboveColour,
+        negColour: props.signalBelowColour,
+      });
+    });
   }
 
   componentDidUpdate() {
@@ -65,20 +90,23 @@ class GeoMap extends Component {
         opacity: this.props.bgOpacity,
         cellHoverHandler: this.props.handleHightedCell,
       });
-
+      this.redraw(this.props);
       this.setState({initRender: false});
     }
 
     if (this.props.resize && this.props.ready) {
       geo.resize({data: this.geoData, container: this.geoMapContainer});
+      this.props.resizeComplete();
     }
   }
 
   render() {
 
     return (
-      <div className="component-container" ref={ (e) => this.geoMapContainer = e}  >
-      </div>
+      <View name={this.props.type} container={this.geoMapContainer} saveEnabled={true}>
+        <div className="component-container" ref={ (e) => this.geoMapContainer = e}  >
+        </div>
+      </View>
     );
   }
 }

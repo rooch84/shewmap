@@ -90,7 +90,7 @@ class App extends Component {
   }
 
   componentDidUpdate() {
-    if (this.props.dataReady) {
+    if (this.props.dataReady && this.props.profileReady) {
       if (this.props.profile !== undefined) {
         const height = this.gridContainer.clientHeight;
         const _rowHeight = height / this.state.rows - this.state.space;
@@ -228,6 +228,7 @@ class App extends Component {
             highlightedCell={this.state.highlightedCell}
             gridData={d3.csvParse(this.props.gridData._id)}
             selectionLocked={this.state.selectionLocked}
+            onHandleLayoutChange={this.onConfigChange("layout")}
             />
         </div>
       )

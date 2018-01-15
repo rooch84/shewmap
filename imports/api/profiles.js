@@ -25,6 +25,13 @@ const DEFAULTS = {
   trendEnabled: true,
   trendHeight: 0.1,
   trendOverride: false,
+  layout: [
+    {i: 'GridMap', x: 0, y: 0, w: 15, h: 12},
+    {i: 'GeoMap', x: 15, y: 0, w: 5, h: 6},
+    {i: 'Spc', x: 0, y: 12, w: 15, h: 6},
+    {i: 'Meta', x: 15, y: 12, w: 5, h: 6},
+    {i: 'Legend', x: 15, y: 6, w: 5, h: 6}
+  ],
 };
 
 let populateProps = function(p, dp) {
@@ -87,6 +94,7 @@ Profiles.schema = new SimpleSchema({
   trendEnabled: {type: Boolean},
   trendHeight: {type: Number, decimal: true},
   trendOverride: {type: Boolean},
+  layout: {type: [Object], blackbox: true},
 });
 
 export const updateProfileAccessedTime = new ValidatedMethod({

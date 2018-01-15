@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import RGL from "react-grid-layout";
 import WidthProvider from "../util/WidthProvider.jsx"
 
-import View from './View.jsx';
+import Views from './Views.jsx';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -15,6 +15,7 @@ export default class App extends Component {
     this.componentRefs = {};
     this.state = {
       resizeAll: false,
+      resizeOne: "",
     };
   };
 
@@ -28,69 +29,72 @@ export default class App extends Component {
   };
 
   generateDOM() {
-    const layout = [
-      {i: 'GridMap', x: 0, y: 0, w: 15, h: 12},
-      {i: 'GeoMap', x: 15, y: 0, w: 5, h: 6},
-      {i: 'Spc', x: 0, y: 12, w: 15, h: 6},
-      {i: 'Meta', x: 15, y: 12, w: 5, h: 6},
-      {i: 'Legend', x: 15, y: 6, w: 5, h: 6}
-    ];
-    return layout.map( (l) => {
+
+    return this.props.layout.map( (l) => {
       return (
         <div key={l.i} data-grid={l}>
-          <View {...this.props} ref={ (elem) => {this.componentRefs[l.i] = elem}} type={l.i}  />
-        </div>
-      );
-    });
-  }
-
-  onResize = (layout, oldLayoutItem, layoutItem, placeholder) => {
-    if(this.componentRefs[layoutItem.i] && this.componentRefs[layoutItem.i].onResize) {
-      this.componentRefs[layoutItem.i].onResize(layoutItem);
+          {/*
+            <View {...this.props} ref={ (elem) => {this.componentRefs[l.i] = elem}} type={l.i}  />
+            */}
+            {React.createElement(Views[l.i], {
+              type: l.i,
+              resize: this.state[l.i + "_resize"],
+              resizeComplete: () => {this.setState({[l.i + "_resize"]: false})}, ...this.props})}
+          </div>
+        );
+      });
     }
-  }
 
-  onResizeAll= () => {
-    for (let e of Object.keys(this.componentRefs)) {
-      this.componentRefs[e].onResize();
+    onResize = (layout, oldLayoutItem, layoutItem, placeholder) => {
+        this.setState({[layoutItem.i + "_resize"]: true});
     }
-  }
 
-  onWindowResize = () => {
-    const node = ReactDOM.findDOMNode(this.gridElement); // Flow casts this to Text | Element
-    if (node instanceof HTMLElement) {
+    onResizeAll= () => {
+      return this.props.layout.map( (l) => {
+        this.setState({[l.i + "_resize"]: true});
+      });
+    }
+
+    onWindowResize = () => {
+      const node = ReactDOM.findDOMNode(this.gridElement); // Flow casts this to Text | Element
+      if (node instanceof HTMLElement) {
         this.setState({ width: node.offsetWidth });
         this.setState({ resizeAll: true });
+      }
     }
-  }
 
-  componentDidUpdate() {
-    if (this.state.resizeAll) {
-      this.onResizeAll();
-      this.setState({ resizeAll: false });
+    componentDidUpdate() {
+      if (this.state.resizeAll) {
+        this.onResizeAll();
+        this.setState({ resizeAll: false });
+      }
+
+      if (this.state.resizeOne !== "") {
+        this.componentRefs[this.state.resizeOne].onResize();
+        this.setState({resizeOne: ""});
+      }
     }
-  }
 
-  componentDidMount() {
-    this.onWindowResize();
-  }
+    componentDidMount() {
+      this.onWindowResize();
+    }
 
-  render() {
-    return (
-      <ReactGridLayout
-        onLayoutChange={this.onLayoutChange}
-        onResizeStop={this.onResize}
-        ref={ (gridElement) => this.gridElement = gridElement}
-        width={this.state.width}
-        {...this.props}
-        >
-        {this.generateDOM()}
-      </ReactGridLayout>
-    );
-  }
+    render() {
+      return (
+        <ReactGridLayout
+          onLayoutChange={this.onLayoutChange}
+          onResizeStop={this.onResize}
+          ref={ (gridElement) => this.gridElement = gridElement}
+          width={this.state.width}
+          {...this.props}
+          >
+          {this.generateDOM()}
+        </ReactGridLayout>
+      );
+    }
 
-  onLayoutChange = (layout) => {
-    //this.props.onLayoutChange(layout);
-  }
+    onLayoutChange = (layout) => {
+      this.props.onHandleLayoutChange({}, layout);
+    }
 
-}
+  }

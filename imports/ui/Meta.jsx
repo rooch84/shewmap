@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
-import * as Const from '../util/constants.js';
 import {List, ListItem} from 'material-ui/List';
+
+import * as Const from '../util/constants.js';
+import View from './View.jsx';
 
 export default class Meta extends Component {
 
@@ -23,11 +25,13 @@ export default class Meta extends Component {
       }
     }
     return (
-      <List>
-        <ListItem primaryText={neighbourhood} />
-        <ListItem primaryText={npu} />
-        <ListItem primaryText={population} />
-      </List>
+      <View name={this.props.type} >
+        <List>
+          <ListItem primaryText={neighbourhood} />
+          <ListItem primaryText={npu} />
+          <ListItem primaryText={population} />
+        </List>
+      </View>
     );
   }
 }
