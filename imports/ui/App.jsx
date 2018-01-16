@@ -70,6 +70,9 @@ class App extends Component {
   onConfigChange = (k) => {
     return function(e, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
   }
+  onSelectionChange = (k) => {
+    return function(e, i, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
+  }
 
   onCellHightlight = (cell) => {
     if (!this.state.selectionLocked) {
@@ -105,6 +108,12 @@ class App extends Component {
         today = d3.timeParse("%m-%Y")(1 + "-" + 2016);
         var properties = {};
 
+        var maxVal = 0;
+        var volMaxVal = 0;
+        var minVal = Number.MAX_SAFE_INTEGER;
+        var volMinVal = Number.MAX_SAFE_INTEGER;
+        var maxRatio = 0;
+        let gridData = d3.csvParse(this.props.gridData._id);
         this.props.data.data.forEach(function(d) {
 
           d.values.forEach( function (d) {
@@ -119,14 +128,62 @@ class App extends Component {
           }
 
           d.values.splice(i, d.values.length);
+
+          var mean = d3.mean(d.values, function(d1) { return d1.Count});
+          var sd = d3.deviation(d.values, function(d1) { return d1.Count});
+          var ratio = sd / mean;
+
+          if (mean + 3 * sd > maxVal) {
+            maxVal = mean + 3 * sd;
+          }
+          if (mean - 3 * sd < minVal) {
+            minVal = mean - 3 * sd;
+          }
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+          }
+
+
+          for (let n of gridData) {
+            if (n.Neigh_code == d.key) {
+              for (let m of d.values) {
+                if (n.pop2011 == 0) {
+                  m.Volume = 0;
+                } else {
+                  m.Volume = m.Count /  n.pop2011;
+                }
+              }
+            }
+          }
+
+          var volMean = d3.mean(d.values, function(d1) { return d1.Volume});
+          var volSd = d3.deviation(d.values, function(d1) { return d1.Volume});
+
+          if (volMean + 3 * volSd > volMaxVal) {
+            volMaxVal = volMean + 3 * volSd;
+          }
+          if (volMean - 3 * volSd < volMinVal) {
+            volMinVal = volMean - 3 * volSd;
+          }
+
           spc.getSignals(d.values, properties[d.key] = {
             "autoDetectProcess" : true,
             "autoDetectUntil" : autoDetectCap,
             "signalDescriptors": signalDescriptors,
           });
+
+        });
+
+        this.props.data.data.forEach(function(d) {
           d.max = d3.max(properties[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
           d.min = d3.min(properties[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
           d.mean = d3.mean(d.values, function(d1) { return d1.Count});
+          d.minGlobalVar = d.mean - 3.5 * d.mean * maxRatio;
+          d.maxGlobalVar = d.mean + 3.5 * d.mean * maxRatio;
+          d.minGlobalCount = minVal;
+          d.maxGlobalCount = maxVal;
+          d.minVolume = volMinVal;
+          d.maxVolume = volMaxVal;
         });
         this.setState({signals: properties, data: this.props.data.data});
       }
@@ -191,6 +248,7 @@ class App extends Component {
         bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
         processEnabledChangeHandler={this.onConfigChange("processEnabled")}
         processOpacityChangeHandler={this.onConfigChange("processOpacity")}
+        processScaleChangeHandler={this.onSelectionChange("processScale")}
         gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
         gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
         gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}

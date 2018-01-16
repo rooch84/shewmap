@@ -4,9 +4,12 @@ import Paper from 'material-ui/Paper';
 import { SketchPicker } from 'react-color'
 import {RadioButton, RadioButtonGroup} from 'material-ui/RadioButton';
 import {Popover} from 'material-ui/Popover';
+import {DropDownMenu} from 'material-ui/DropDownMenu';
 import ConfigItem from './ConfigItem.jsx';
 import Toggle from 'material-ui/Toggle';
+import MenuItem from 'material-ui/MenuItem';
 
+import * as Const from '../util/constants.js'
 
 export default class Configurator extends Component {
 
@@ -73,6 +76,10 @@ export default class Configurator extends Component {
         </React.Fragment>
       )
     }
+  }
+
+  processScaleTypes() {
+    return (Const.processScaleTypes.map( (e) => { return(<MenuItem key={e.id} value={e.id} primaryText={e.name} />) } ));
   }
 
   renderItems() {
@@ -154,7 +161,12 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">Opacity: </span>
           <span className="config-item__row-item">{this.props.processOpacity.toFixed(2)}</span>
         </div>
-
+        <div className="config-item-row">
+          <span className="config-item__row-item">Scale: </span>
+            <DropDownMenu className="config-item__row-item" value={this.props.processScale} onChange={this.props.processScaleChangeHandler}>
+            {this.processScaleTypes()}
+          </DropDownMenu>
+        </div>
       </ConfigItem>,
 
       <ConfigItem key="4" title="Gauge Lines" enabled={this.props.gaugeEnabled} enabledChangeHander={this.props.gaugeEnabledChangeHandler}>

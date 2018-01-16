@@ -18,6 +18,7 @@ const DEFAULTS = {
   bivariateSignalColours: true,
   processEnabled: true,
   processOpacity: 0.3,
+  processScale: "global",
   gaugeEnabled: true,
   gaugeOpacity: 0.8,
   gaugeException: true,
@@ -52,7 +53,6 @@ if (Meteor.isServer) {
   });
 
   Meteor.users.after.insert(function (userId, doc) {
-    console.log(this._id);
     let defaultProfile = {
       name: "default",
       createdAt: new Date(),
@@ -87,6 +87,7 @@ Profiles.schema = new SimpleSchema({
   bivariateSignalColours: {type: Boolean},
   processEnabled: {type: Boolean},
   processOpacity: {type: Number, decimal: true},
+  processScale: {type: String},
   gaugeEnabled: {type: Boolean},
   gaugeOpacity: {type: Number, decimal: true},
   gaugeException: {type: Boolean},

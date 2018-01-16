@@ -53,6 +53,7 @@ export default class GridMap extends Component {
         nextProps.signalOpacity !== this.props.signalOpacity ||
         nextProps.processOpacity !== this.props.processOpacity ||
         nextProps.processEnabled !== this.props.processEnabled ||
+        nextProps.processScale !== this.props.processScale ||
         nextProps.trendEnabled !== this.props.trendEnabled ||
         nextProps.trendHeight !== this.props.trendHeight ||
         nextProps.trendOverride !== this.props.trendOverride ||
@@ -119,16 +120,39 @@ export default class GridMap extends Component {
       }
 
       if (props.processEnabled && !props.trendOverride) {
+        let min = 0;
+        let max = 0;
+        let field = "Count";
+        switch(props.processScale) {
+          case "global":
+          min = d.minGlobalCount;
+          max = d.maxGlobalCount;
+          break;
+          case "local":
+          min =  d.min;
+          max = d.max;
+          break;
+          case "globalVar":
+          min = d.minGlobalVar;
+          max = d.maxGlobalVar;
+          break;
+          case "volume":
+          min = d.minVolume;
+          max = d.maxVolume;
+          field = "Volume";
+          break;
+        }
         gridmap.processesAsBackgroundShade({
           container: container,
           cell: "." + d.key,
           signalData: signals[d.key],
           data: d.values,
-          minY: d.min,
-          maxY: d.max,
+          minY: min,
+          maxY: max,
           meanLine: true,
           opacity: props.processOpacity,
-          margin: props.trendEnabled ? props.trendHeight : 0
+          margin: props.trendEnabled ? props.trendHeight : 0,
+          field: field
         });
       }
 
