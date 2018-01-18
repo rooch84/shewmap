@@ -1,9 +1,11 @@
 import { Meteor } from 'meteor/meteor';
 import * as d3 from 'd3';
+import * as pako from'pako';
+
+import * as Const from '../util/constants.js';
 
 const gridDataFile = "data/west-mids-smwg.csv";
 const geoDataFile = "data/west-mids-neighbourhoods.geojson";
-const demoCrimeFile = "data/derived_data_2016.csv"
 
 Meteor.publish('gridData', function() {
   this.added('gridData', Assets.getText(gridDataFile));
@@ -22,17 +24,17 @@ Meteor.publish('regions', function() {
   this.ready();
 });
 
-Meteor.publish('demo', function() {
-  let theData = d3.csvParse(Assets.getText(demoCrimeFile));
-  let crimeData = d3.nest()
-    .key(function(d) { return d.neighbourhood; })
-    .key(function(d) { return d.Month; })
-    .rollup(function(v) {
-      return d3.sum(v, function(d) {
-        return d.Count;
-      })
-    })
-    .entries(theData);
-  this.added('demo', "crime", {data: crimeData} );
+Meteor.publish('demo', function(datasetId) {
+  if (!(datasetId in Const.exampleDatasets)) return this.ready();
+  let theData = d3.csvParse(Assets.getText(Const.exampleDatasets[datasetId].fileName));
+  this.added('demo', "data", {data: theData} );
+  this.ready();
+});
+
+Meteor.publish('demoBinary', function(datasetId) {
+  if (!(datasetId in Const.exampleDatasets)) return this.ready();
+  //let theData = Assets.getText(Const.exampleDatasets[datasetId].fileName);
+  let theData = Assets.getBinary(Const.exampleDatasets[datasetId].fileName);
+  this.added('demoBinary', "data", {data: theData} );
   this.ready();
 });

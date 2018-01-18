@@ -6,16 +6,21 @@ import AppBar from 'material-ui/AppBar';
 import Drawer from 'material-ui/Drawer';
 import IconButton from 'material-ui/IconButton';
 import FontIcon from 'material-ui/FontIcon';
+import Paper from 'material-ui/Paper';
 import * as d3 from 'd3';
 import * as spc from '@valcri/spc-sd'
 
 import Canvas from './Canvas.jsx';
+import DataImporter from './DataImporter.jsx';
 import Configurator from './Configurator.jsx';
 import Menu from './Menu.jsx';
 import * as util from '../util/util.js';
 import {Profiles} from '../api/profiles.js';
+import * as Const from '../util/constants.js';
 
-const Data = new Mongo.Collection('demo');
+import * as pako from 'pako';
+
+const Data = new Mongo.Collection('demoBinary');
 const GridData = new Mongo.Collection('gridData');
 
 const signalDescriptors = spc.SIGNALS;
@@ -58,6 +63,9 @@ class App extends Component {
       selectionLocked: false,
       signals: {},
       data:[],
+      dataLoaded: false,
+      signalsReady: false,
+      dateAggregation: Const.defaultFormat.id,
     }
   };
 
@@ -93,7 +101,16 @@ class App extends Component {
   }
 
   componentDidUpdate() {
-    if (this.props.dataReady && this.props.profileReady) {
+    if (this.props.data && !this.state.dataLoaded) {
+
+      let win1251decoder = new TextDecoder('utf-8');
+      let result = d3.csvParse(win1251decoder.decode(pako.inflate(this.props.data.data)));
+
+      let ds = Const.exampleDatasets[this.props.datasetId];
+
+      this.loadDataset(result, ds.Date, ds.npu, ds.neighbourhood, ds.aggregateBy);
+    };
+    if (this.props.dataReady && this.props.profileReady && this.state.dataLoaded) {
       if (this.props.profile !== undefined) {
         const height = this.gridContainer.clientHeight;
         const _rowHeight = height / this.state.rows - this.state.space;
@@ -101,11 +118,11 @@ class App extends Component {
         this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
       }
       if (util.isEmpty(this.state.signals)) {
-        var month = 7;
-        var year = 2014;//2012;
-        var today = d3.timeParse("%m-%Y")(month + "-" + year);
-        var autoDetectCap = today;
-        today = d3.timeParse("%m-%Y")(1 + "-" + 2016);
+        //var month = 8;
+        //var year = 2016;//2012;
+        //var today = d3.timeParse("%m-%Y")(month + "-" + year);
+        //var autoDetectCap = today;
+        //today = d3.timeParse("%m-%Y")(1 + "-" + 2016);
         var properties = {};
 
         var maxVal = 0;
@@ -114,20 +131,23 @@ class App extends Component {
         var volMinVal = Number.MAX_SAFE_INTEGER;
         var maxRatio = 0;
         let gridData = d3.csvParse(this.props.gridData._id);
-        this.props.data.data.forEach(function(d) {
 
-          d.values.forEach( function (d) {
-            d.Date = d3.timeParse("%Y-%m")(d.key);
-            d.Count = +d.value;
-          });
+
+        this.state.data.forEach(function(d) {
+
+          // d.values.forEach( function (d) {
+          //   d.Date = d3.timeParse("%Y-%m")(d.key);
+          //   d.Count = +d.value;
+          // });
           d.values.sort(function(a,b) {return a.Date-b.Date;});
 
-          let i = 0;
-          while(d.values[i].Date <= today) {
-            i++;
-          }
+          //let i = 0;
+          //console.log(d.values[i]);
+          //while(d.values[i].Date <= today) {
+          //  i++;
+          //}
 
-          d.values.splice(i, d.values.length);
+          //d.values.splice(i, d.values.length);
 
           var mean = d3.mean(d.values, function(d1) { return d1.Count});
           var sd = d3.deviation(d.values, function(d1) { return d1.Count});
@@ -167,14 +187,13 @@ class App extends Component {
           }
 
           spc.getSignals(d.values, properties[d.key] = {
-            "autoDetectProcess" : true,
-            "autoDetectUntil" : autoDetectCap,
+            "autoDetectProcess" : false,
             "signalDescriptors": signalDescriptors,
           });
 
         });
 
-        this.props.data.data.forEach(function(d) {
+        this.state.data.forEach(function(d) {
           d.max = d3.max(properties[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
           d.min = d3.min(properties[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
           d.mean = d3.mean(d.values, function(d1) { return d1.Count});
@@ -185,9 +204,43 @@ class App extends Component {
           d.minVolume = volMinVal;
           d.maxVolume = volMaxVal;
         });
-        this.setState({signals: properties, data: this.props.data.data});
+
+        //console.log(this.state.signals);
+
+        this.setState({signals: properties, signalsReady: true});
       }
     }
+  }
+
+  loadDataset = (data, dataField, npuField, neighbourhoodField, defaultAggregation) => {
+    data.forEach( function (d) {
+      d.Date = d3.timeParse(Const.dateFormat)(d.Date);
+      for (let key of Object.keys(Const.dateAggregations)) {
+        d[Const.dateAggregations[key].field] = d3.timeFormat(Const.dateAggregations[key].format)(d.Date);
+      }
+    });
+
+    let nestedData = d3.nest()
+    .key(function(d) { return d.neighbourhood; })
+    .key(function(d) { return d[Const.dateAggregations[defaultAggregation].field]; })
+    .rollup(function(v) {
+      return v.length;
+    })
+    .entries(data);
+
+    nestedData.forEach( function(d) {
+
+      d.values.forEach( function (d) {
+        d.Date = d3.timeParse(Const.dateAggregations[defaultAggregation].format)(d.key);
+        d.Count = +d.value;
+      });
+    })
+
+    this.setState({
+      data: nestedData,
+      dateAggregation: defaultAggregation,
+      dataLoaded: true,
+    })
   }
 
   render() {
@@ -261,14 +314,26 @@ class App extends Component {
     )
   }
 
+  paperContainer(m) {
+    return (
+      <div className="paper-outer">
+        <Paper className="paper-inner" zDepth={2} >
+          {m}
+        </Paper>
+      </div>
+    )
+  }
+
   renderMain(props) {
     if (!Meteor.userId()) {
-      return (<div>Please Login</div>)
+      return (this.paperContainer(<div className="message">Please login to continue</div>))
     } else if (!this.props.profileReady) {
       return (<span></span>)
     } else if (this.props.profile === undefined) {
-      return (<div>Create a profile to start</div>)
-    } else {
+      return (this.paperContainer(<div className="message">Create a profile to start</div>))
+    } else if (!this.state.dataLoaded) {
+      return (this.paperContainer(<DataImporter loadDataset={this.loadDataset} loadExampleDataSet={this.props.onExampleDatasetSelection}/>))
+    } else if (this.state.dataLoaded) {
       return(
         <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
           <Canvas
@@ -290,6 +355,8 @@ class App extends Component {
             />
         </div>
       )
+    } else {
+      return (<span></span>)
     }
   }
 }
@@ -301,17 +368,19 @@ App.propTypes = {
   profileReady: PropTypes.bool.isRequired,
   dataReady: PropTypes.bool.isRequired,
   gridDataReady: PropTypes.bool.isRequired,
+  onExampleDatasetSelection: PropTypes.func.isRequired,
+  datasetId: PropTypes.string.isRequired
 };
 
 export default withTracker((props) => {
-  const handler1 = Meteor.subscribe('demo');
+  const handler1 = Meteor.subscribe('demoBinary', props.datasetId);
   const handler2 = Meteor.subscribe('profiles');
   const handler3 = Meteor.subscribe('gridData');
   return {
     dataReady: handler1.ready(),
     profileReady: handler2.ready(),
     gridDataReady: handler3.ready(),
-    data: Data.findOne({_id: "crime"}),
+    data: Data.findOne({_id: "data"}),
     profile: Profiles.findOne({userId: Meteor.userId, name: { $ne: "default" }}, { sort: { lastAccessed: -1 }}),
     gridData: GridData.findOne(),
   };

@@ -121,7 +121,7 @@ export default class Configurator extends Component {
         </RadioButtonGroup>
         <div className="config-item__row-item">
           <Toggle
-            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            style={{textAlign: "left"}}
             label="Use bivariate colour scale"
             toggled={this.props.bivariateSignalColours}
             onToggle={this.props.bivariateSignalColoursChangeHandler}
@@ -187,7 +187,7 @@ export default class Configurator extends Component {
         </div>
         <div className="config-item__row-item">
           <Toggle
-            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            style={{textAlign: "left"}}
             label="Highlight extended signals"
             toggled={this.props.gaugeException}
             onToggle={this.props.gaugeExceptionChangeHandler}
@@ -206,7 +206,7 @@ export default class Configurator extends Component {
       <ConfigItem key="5" title="Trend Channels" enabled={this.props.trendEnabled} enabledChangeHander={this.props.trendEnabledChangeHandler}>
         <div className="config-item__row-item">
           <Toggle
-            style={{textAlign: "left", width: "inherit", display: "initial"}}
+            style={{textAlign: "left"}}
             label="Fill"
             toggled={this.props.trendOverride}
             onToggle={this.props.trendOverrideChangeHandler}
@@ -225,6 +225,17 @@ export default class Configurator extends Component {
         </div>
         <div className="config-item-row">
           <span>Height: </span><span>{(this.props.trendHeight * 100).toFixed(0)}%</span>
+        </div>
+      </ConfigItem>,
+
+      <ConfigItem key="6" title="Data" enabled={this.props.trendEnabled} enabledChangeHander={this.props.trendEnabledChangeHandler}>
+        <div className="config-item__row-item">
+          <Toggle
+            style={{textAlign: "left"}}
+            label="Automatically detect process breaks"
+            toggled={this.props.trendOverride}
+            onToggle={this.props.trendOverrideChangeHandler}
+            />
         </div>
       </ConfigItem>
     ]
