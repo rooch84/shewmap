@@ -105,9 +105,7 @@ class App extends Component {
 
       let win1251decoder = new TextDecoder('utf-8');
       let result = d3.csvParse(win1251decoder.decode(pako.inflate(this.props.data.data)));
-
       let ds = Const.exampleDatasets[this.props.datasetId];
-
       this.loadDataset(result, ds.Date, ds.npu, ds.neighbourhood, ds.aggregateBy);
     };
     if (this.props.dataReady && this.props.profileReady && this.state.dataLoaded) {
@@ -129,20 +127,7 @@ class App extends Component {
 
 
         this.state.data.forEach(function(d) {
-
-          // d.values.forEach( function (d) {
-          //   d.Date = d3.timeParse("%Y-%m")(d.key);
-          //   d.Count = +d.value;
-          // });
           d.values.sort(function(a,b) {return a.Date-b.Date;});
-
-          //let i = 0;
-          //console.log(d.values[i]);
-          //while(d.values[i].Date <= today) {
-          //  i++;
-          //}
-
-          //d.values.splice(i, d.values.length);
 
           var mean = d3.mean(d.values, function(d1) { return d1.Count});
           var sd = d3.deviation(d.values, function(d1) { return d1.Count});

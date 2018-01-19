@@ -16,7 +16,11 @@ export const exampleDatasets = {
   crime: {
     id: "crime",
     name: "West Midlands Crime",
-    fileName: "data/derived_data_2016.csv",
+    fileName: "data/crime_subset.csv.gz",
+    date: "Date",
+    npu: "NPU_code",
+    neighbourhood: "neighbourhood",
+    aggregateBy: "month",
   },
 }
 
