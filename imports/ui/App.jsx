@@ -118,11 +118,6 @@ class App extends Component {
         this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
       }
       if (util.isEmpty(this.state.signals)) {
-        //var month = 8;
-        //var year = 2016;//2012;
-        //var today = d3.timeParse("%m-%Y")(month + "-" + year);
-        //var autoDetectCap = today;
-        //today = d3.timeParse("%m-%Y")(1 + "-" + 2016);
         var properties = {};
 
         var maxVal = 0;

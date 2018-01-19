@@ -125,7 +125,6 @@ export default class DataImporter extends Component {
         categories.push(key);
       }
     }
-    console.log(potentialDates);
 
     let tmpNpu = potentialNpu.concat(notPotentialNpu);
     let tmpNeighbourhood = potentialNeighbourhood.concat(notPotentialNeighbourhood);
@@ -262,6 +261,7 @@ export default class DataImporter extends Component {
         >
         { dropzoneActive && <div className="dropzone-overlay">Release here to upload ...</div> }
         <div>Drop a csv file here to start, or chose an example dataset from the list below.</div>
+        <div>Dates must be formatted as <i>dd/mm/YYYY HH:MM:SS</i>, e.g., 13/01/2017 21:45:00</div>
 
         {this.populateContent()}
 
