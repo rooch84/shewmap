@@ -67,7 +67,8 @@ export default class GridMap extends Component {
         nextProps.signalType !== this.props.signalType ||
         nextProps.signalColour !== this.props.signalColour ||
         nextProps.signalAboveColour !== this.props.signalAboveColour ||
-        nextProps.signalBelowColour !== this.props.signalBelowColour
+        nextProps.signalBelowColour !== this.props.signalBelowColour ||
+        nextProps.signalChange !== this.props.signalChange
       ) {
         this.redraw(nextProps);
       }

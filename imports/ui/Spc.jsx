@@ -18,12 +18,19 @@ export default class Spc extends Component {
       d3.select(this.spcElement).html("");
       for (let row of this.props.data) {
         if (row.key === nextProps.highlightedCell) {
+          console.log(this.props.signals[nextProps.highlightedCell]);
           this.props.signals[nextProps.highlightedCell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
-          spc.displayChart(row.values, this.spcElement, this.props.signals[nextProps.highlightedCell]);
+          spc.displayChart(row.values, this.spcElement, this.props.signals[nextProps.highlightedCell], this.updateSignals(nextProps.highlightedCell));
           this.setState({rendered: true});
           break;
         }
       }
+    }
+  }
+
+  updateSignals = (cell) => {
+    return (s) => {
+      this.props.onSignalsChange(cell, s);
     }
   }
 

@@ -62,10 +62,12 @@ class App extends Component {
       highlightedCell: "",
       selectionLocked: false,
       signals: {},
+      signalUpdate: false,
       data:[],
       dataLoaded: false,
       signalsReady: false,
       dateAggregation: Const.defaultFormat.id,
+      signalChange: Math.random(),
     }
   };
 
@@ -80,6 +82,21 @@ class App extends Component {
   }
   onSelectionChange = (k) => {
     return function(e, i, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
+  }
+
+  onSignalsChange = (c, s) => {
+    this.state.signals[c] = s;
+    for (let i of this.state.data) {
+      if (i.key === c) {
+        spc.getSignals(i.values, this.state.signals[c]);
+      }
+    }
+
+    this.setState({
+    //  signals: this.state.signals,
+      signalChange: Math.random(),
+    })
+  //  this.forceUpdate();
   }
 
   onCellHightlight = (cell) => {
@@ -332,6 +349,8 @@ class App extends Component {
             gridData={d3.csvParse(this.props.gridData._id)}
             selectionLocked={this.state.selectionLocked}
             onHandleLayoutChange={this.onConfigChange("layout")}
+            onSignalsChange={this.onSignalsChange}
+            signalChange={this.state.signalChange}
             />
         </div>
       )
