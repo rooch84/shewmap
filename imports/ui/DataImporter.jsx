@@ -238,12 +238,15 @@ export default class DataImporter extends Component {
       return this.fieldSelector();
     } else {
       return (
-        <div className="config-item-row">
-          <DropDownMenu className="config-item__row-item" value={this.state.exampleDataset} onChange={this.exampleDatasetChangeHandler}>
-            {this.listExamples()}
-          </DropDownMenu>
-          <FlatButton className="config-item__row-item" label="Load example dataset" onClick={this.loadExampleDataSet}/>
-        </div>
+        <React.Fragment>
+          <div className="config-item-row">
+            <DropDownMenu className="config-item__row-item" value={this.state.exampleDataset} onChange={this.exampleDatasetChangeHandler}>
+              {this.listExamples()}
+            </DropDownMenu>
+            <FlatButton className="config-item__row-item" label="Load example dataset" onClick={this.loadExampleDataSet}/>
+          </div>
+          <span>Note: It can take a while to process the data.</span>
+        </React.Fragment>
       )
     }
   }

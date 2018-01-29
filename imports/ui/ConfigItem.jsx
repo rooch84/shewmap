@@ -30,7 +30,7 @@ export default class ConfigItem extends Component {
       <Paper style={style}  zDepth={1}>
            <Toolbar className="config-item-header" >
              <ToolbarGroup firstChild={true}>
-               <Checkbox checked={this.props.enabled} onCheck={this.props.enabledChangeHander} style={checkbox}/>
+               {this.props.enabledChangeHander ?  <Checkbox checked={this.props.enabled} onCheck={this.props.enabledChangeHander} style={checkbox}/> : "" }
                <ToolbarTitle text={this.props.title} />
              </ToolbarGroup>
 

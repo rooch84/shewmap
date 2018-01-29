@@ -13,8 +13,6 @@ import {List, ListItem} from 'material-ui/List';
 
 import { Profiles, insertProfile, removeProfile, updateProfileAccessedTime} from '../api/profiles.js'
 
-import AccountsUIWrapper from './AccountsUIWrapper.jsx';
-
 const style = {
   width: 340,
   margin: 5,
@@ -91,7 +89,7 @@ class Menu extends Component {
 
     return (
       <div>
-        <AccountsUIWrapper />
+
 
         <Paper style={style}  zDepth={1}>
           <Toolbar className="config-item-header" >

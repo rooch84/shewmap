@@ -86,6 +86,7 @@ export default class GridMap extends Component {
   redraw(props) {
     let signals = props.signals;
     let container = this.gridMapContainer;
+    gridmap.resetZoom(container);
     props.data.forEach(function(d) {
       gridmap.clearCell({container: container, cell: "." + d.key} );
 

@@ -8,6 +8,7 @@ import {DropDownMenu} from 'material-ui/DropDownMenu';
 import ConfigItem from './ConfigItem.jsx';
 import Toggle from 'material-ui/Toggle';
 import MenuItem from 'material-ui/MenuItem';
+import DatePicker from 'material-ui/DatePicker';
 
 import * as Const from '../util/constants.js'
 
@@ -163,7 +164,7 @@ export default class Configurator extends Component {
         </div>
         <div className="config-item-row">
           <span className="config-item__row-item">Scale: </span>
-            <DropDownMenu className="config-item__row-item" value={this.props.processScale} onChange={this.props.processScaleChangeHandler}>
+          <DropDownMenu className="config-item__row-item" value={this.props.processScale} onChange={this.props.processScaleChangeHandler}>
             {this.processScaleTypes()}
           </DropDownMenu>
         </div>
@@ -228,15 +229,36 @@ export default class Configurator extends Component {
         </div>
       </ConfigItem>,
 
-      <ConfigItem key="6" title="Data" enabled={this.props.trendEnabled} enabledChangeHander={this.props.trendEnabledChangeHandler}>
+      <ConfigItem key="6" title="Data" >
         <div className="config-item__row-item">
           <Toggle
             style={{textAlign: "left"}}
             label="Automatically detect process breaks"
-            toggled={this.props.trendOverride}
-            onToggle={this.props.trendOverrideChangeHandler}
+            toggled={this.props.autoDetectProcess}
+            onToggle={this.props.autoDetectProcessChangeHandler}
             />
         </div>
+        <div className="config-item-row">
+          <span className="config-item__row-item">Start date</span>
+          <DatePicker
+            className="config-item__row-item"
+            hintText="Start date"
+            mode="landscape"
+            value={this.props.minDate}
+            onChange={this.props.minDateChangeHandler}
+            />
+        </div>
+        <div className="config-item-row">
+          <span className="config-item__row-item">End date</span>
+          <DatePicker
+            className="config-item__row-item"
+            hintText="End date"
+            mode="landscape"
+            value={this.props.maxDate}
+            onChange={this.props.maxDateChangeHandler}
+            />
+        </div>
+
       </ConfigItem>
     ]
 

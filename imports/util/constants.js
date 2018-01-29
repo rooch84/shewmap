@@ -4,15 +4,6 @@ export const processScaleTypes = [ {id: "global", name: "Global crime count"}, {
 {id: "local", name: "Local range"}];//,{id: "volume", name: "Global crime volume"}];
 
 export const exampleDatasets = {
-  stop: {
-    id: "stop",
-    name: "West Midlands Stop and Search",
-    fileName: "data/stopAndSearch.csv.gz",
-    date: "Date",
-    npu: "NPU_code",
-    neighbourhood: "neighbourhood",
-    aggregateBy: "day",
-  },
   crime: {
     id: "crime",
     name: "West Midlands Crime",
@@ -21,6 +12,15 @@ export const exampleDatasets = {
     npu: "NPU_code",
     neighbourhood: "neighbourhood",
     aggregateBy: "month",
+  },
+  stop: {
+    id: "stop",
+    name: "West Midlands Stop and Search",
+    fileName: "data/stopAndSearch.csv.gz",
+    date: "Date",
+    npu: "NPU_code",
+    neighbourhood: "neighbourhood",
+    aggregateBy: "day",
   },
 }
 

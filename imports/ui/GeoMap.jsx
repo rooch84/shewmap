@@ -42,7 +42,8 @@ class GeoMap extends Component {
       if (
         nextProps.signalAboveColour !== this.props.signalAboveColour ||
         nextProps.signalBelowColour !== this.props.signalBelowColour ||
-        nextProps.bgOpacity !== this.props.bgOpacity
+        nextProps.bgOpacity !== this.props.bgOpacity ||
+        nextProps.signalChange !== this.props.signalChange
       ) {
         this.redraw(nextProps);
       }

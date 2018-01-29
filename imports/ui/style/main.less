@@ -8,6 +8,11 @@ html, body {
   height: 100%;
 }
 
+.main-header {
+  background-color: #999 !important;
+  color: white;
+}
+
 .container {
   height: 100%;
   display: flex;
@@ -150,9 +155,29 @@ html, body {
 
 .dropzone {
   position: relative;
-  min-width: 400px;
-  min-height: 300px;
+  /*min-width: 400px;*/
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+#forgot-password-link {
+  display: none;
+}
+
+#login-dropdown-list {
+  position: fixed !important;
+  top: 20px !important;
+  right: 30px !important;
+  left: auto !important;
+}
+
+.login-button {
+  background-color: #999 !important;
+  border: none !important;
+}
+
+.login-button:hover {
+  background-color: #AAA !important;
 }
