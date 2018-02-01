@@ -19,7 +19,7 @@ Meteor.publish('geoData', function() {
 
 Meteor.publish('regions', function() {
   let smwgData = d3.csvParse(Assets.getText(gridDataFile));
-  let regions = d3.map(smwgData, function(d){return d.NPU;}).keys();
+  let regions =  Object.assign(...smwgData.map(d => ({[d.NPU]: d.NPU_code})));
   this.added('regions', "1", {data: regions});
   this.ready();
 });

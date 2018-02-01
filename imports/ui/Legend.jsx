@@ -15,6 +15,10 @@ class Legend extends Component {
     super(props);
     this.legendElement;
     this.npuColourScale;
+
+    this.state = {
+      initRender: true
+    }
   };
 
   componentWillUpdateProps(nextProps) {
@@ -27,11 +31,17 @@ class Legend extends Component {
 
   componentDidUpdate() {
     if (this.props.ready) {
-      this.npuColourScale = d3.scaleOrdinal()
-      .domain(this.props.regions.data)
-      .range(Const.npuColours);
-      this.drawLegend();
+      if (this.state.initRender) {
 
+        this.npuColourScale = d3.scaleOrdinal()
+        .domain(Object.keys(this.props.regions.data))
+        .range(Const.npuColours);
+        this.drawLegend();
+
+        this.setState({
+          initRender: false
+        })
+      }
       if (this.props.resize) {
         this.drawLegend();
         this.props.resizeComplete();
@@ -41,7 +51,16 @@ class Legend extends Component {
 
   drawLegend() {
     d3.select(this.legendElement).html("");
-    legend.draw(this.legendElement, "discreet", this.npuColourScale, this.props.bgOpacity);
+    legend.draw(
+      this.legendElement,
+      "discreet",
+      this.npuColourScale,
+      this.props.bgOpacity,
+      this.props.handleHightedCell,
+      this.props.handleCellSelection,
+      this.props.handleCellDeselection,
+      this.props.regions.data
+    );
   }
 
   render() {

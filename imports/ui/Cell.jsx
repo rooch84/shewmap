@@ -14,7 +14,7 @@ export default class GeoMap extends Component {
       let signals = this.props.signals;
       d3.select(this.cellContainer).html("");
       for (let row of this.props.data) {
-        if (row.key === nextProps.highlightedCell) {
+        if (row.key === nextProps.highlightedCell.cell) {
           gridmap.initCell(this.cellContainer, row.key);
           gridmap.processesAsBackgroundShade({container: this.cellContainer, cell: "." + row.key, signalData: signals[row.key],
             data: row.values, minY: row.min, maxY: row.max, meanLine: true});

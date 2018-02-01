@@ -23,14 +23,8 @@ export default class GridMap extends Component {
 
   onResize = () => {
     if (this.state.initRender == 2) {
-      gridmap.resize(this.gridMapContainer);
       this.redraw(this.props);
     }
-    //gridmap.clearCells(this.gridMapContainer);
-    //crimeData.forEach(function(d) {
-    //  gridmap.processesAsBackgroundShade({container: ".grid", cell: "." + d.key, signalData: properties[d.key],
-    //  data: d.values, signalDescriptors: signalDescriptors, minY: d.min, maxY: d.max, meanLine: true});
-    //});
     this.props.resizeComplete();
   }
 
@@ -44,8 +38,13 @@ export default class GridMap extends Component {
     }
 
     if (nextProps.highlightedCell !== this.props.highlightedCell) {
-      gridmap.removeHighlight(this.gridMapContainer, "." + this.props.highlightedCell);
-      gridmap.addHighlight(this.gridMapContainer, "." + nextProps.highlightedCell);
+
+      if (this.props.highlightedCell.nest !== "all") {
+        gridmap.removeHighlight(this.gridMapContainer, "." + this.props.highlightedCell.cell);
+      }
+      if (nextProps.highlightedCell.nest !== "all") {
+        gridmap.addHighlight(this.gridMapContainer, "." + nextProps.highlightedCell.cell);
+      }
     }
 
     if (this.state.initRender == 2) {
@@ -84,138 +83,140 @@ export default class GridMap extends Component {
   }
 
   redraw(props) {
-    let signals = props.signals;
     let container = this.gridMapContainer;
-    gridmap.resetZoom(container);
-    props.data.forEach(function(d) {
-      gridmap.clearCell({container: container, cell: "." + d.key} );
 
-      if (props.signalEnabled && !props.trendOverride) {
-        if (props.signalType === "icon") {
-          gridmap.addSignalsAsIcons({
-            container: container,
-            cell: "." + d.key,
-            signalData: signals[d.key],
-            opacity: props.signalOpacity,
-            colour: props.signalColour,
-            posColour: props.signalAboveColour,
-            negColour: props.signalBelowColour,
-            bivariate: props.bivariateSignalColours,
-            colourOverride: true,
-            margin: props.trendEnabled ? props.trendHeight : 0
-          });
-        } else {
-          gridmap.addSignalsAsColourOnly({
-            container: container,
-            cell: "." + d.key,
-            signalData: signals[d.key],
-            opacity: props.signalOpacity,
-            colour: props.signalColour,
-            posColour: props.signalAboveColour,
-            negColour: props.signalBelowColour,
-            bivariate: props.bivariateSignalColours,
-            colourOverride: true
-          });
-        }
-      }
+    let npuColours = d3.scaleOrdinal()
+    .domain(d3.map(this.props.gridData, function(d){return d.NPU;}).keys())
+    .range(Const.npuColours);
 
-      if (props.processEnabled && !props.trendOverride) {
-        let min = 0;
-        let max = 0;
-        let field = "Count";
-        switch(props.processScale) {
-          case "global":
-          min = d.minGlobalCount;
-          max = d.maxGlobalCount;
-          break;
-          case "local":
-          min =  d.min;
-          max = d.max;
-          break;
-          case "globalVar":
-          min = d.minGlobalVar;
-          max = d.maxGlobalVar;
-          break;
-          case "volume":
-          min = d.minVolume;
-          max = d.maxVolume;
-          field = "Volume";
-          break;
-        }
-        gridmap.processesAsBackgroundShade({
-          container: container,
-          cell: "." + d.key,
-          signalData: signals[d.key],
-          data: d.values,
-          minY: min,
-          maxY: max,
-          meanLine: true,
-          opacity: props.processOpacity,
-          margin: props.trendEnabled ? props.trendHeight : 0,
-          field: field
-        });
-      }
+    d3.select(this.gridMapContainer).html("");
 
-      if (props.gaugeEnabled && !props.trendOverride) {
-        gridmap.addSignalsAsGlyphsAngleAsMean({
-          container: container,
-          cell: "." + d.key,
-          signalData: signals[d.key],
-          data: d.values,
-          opacity: props.gaugeOpacity,
-          exception: props.gaugeException,
-          strokeColour: props.gaugeColour,
-          posColour: props.signalAboveColour,
-          negColour: props.signalBelowColour
-        });
-      }
-
-      if (props.trendEnabled) {
-        gridmap.addSignalsAsTrendChannel({
-          container: container,
-          cell: "." + d.key,
-          signalData: signals[d.key],
-          data: d.values,
-          size: !props.trendOverride ? props.trendHeight : 0.5
-        });
-
-      }
-      //gridmap.addSignalsAsGlyphsAngleAsMean({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, today: today, opacity: 0.8, signalDescriptors: signalDescriptors});
-      //gridmap.addSignalsAsTrendChannel({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, signalDescriptors: signalDescriptors});
+    gridmap.drawMultiple(props.data.facet.data.map( d => {return {label: d.key, class: d.uuid}} ), {
+      data: props.gridData,
+      container: this.gridMapContainer,
+      tooltip: null,
+      colourScale: npuColours,
+      colourAttribute: "NPU",
+      strokeColour : function (d) { return "#FFFFFF";},
+      offsetX: 1,
+      offsetY: 0,
+      opacity: props.bgOpacity,
+      cellHoverHandler: props.handleHightedCell,
+      cellSelectionHandler: props.handleCellSelection,
+      cellDeselectionHandler: props.handleCellDeselection,
     });
 
+    gridmap.toggleZoomMode(this.gridMapContainer, this.state.zoomMode);
+
+    props.data.facet.data.forEach(function(facet) {
+      facet.values.forEach(function(d) {
+        gridmap.clearCell({container: container, facet: facet.uuid, cell: "." + d.key} );
+        if (props.signalEnabled && !props.trendOverride) {
+          if (props.signalType === "icon") {
+            gridmap.addSignalsAsIcons({
+              container: container,
+              facet: "." + facet.uuid,
+              cell: "." + d.key,
+              signalData: facet.props[d.key],
+              opacity: props.signalOpacity,
+              colour: props.signalColour,
+              posColour: props.signalAboveColour,
+              negColour: props.signalBelowColour,
+              bivariate: props.bivariateSignalColours,
+              colourOverride: true,
+              margin: props.trendEnabled ? props.trendHeight : 0
+            });
+          } else {
+            gridmap.addSignalsAsColourOnly({
+              container: container,
+              facet: "." + facet.uuid,
+              cell: "." + d.key,
+              signalData: facet.props[d.key],
+              opacity: props.signalOpacity,
+              colour: props.signalColour,
+              posColour: props.signalAboveColour,
+              negColour: props.signalBelowColour,
+              bivariate: props.bivariateSignalColours,
+              colourOverride: true
+            });
+
+          }
+        }
+
+        if (props.processEnabled && !props.trendOverride) {
+          let min = 0;
+          let max = 0;
+          let field = "Count";
+          switch(props.processScale) {
+            case "global":
+            min = d.minGlobalCount;
+            max = d.maxGlobalCount;
+            break;
+            case "local":
+            min =  d.min;
+            max = d.max;
+            break;
+            case "globalVar":
+            min = d.minGlobalVar;
+            max = d.maxGlobalVar;
+            break;
+            case "volume":
+            min = d.minVolume;
+            max = d.maxVolume;
+            field = "Volume";
+            break;
+          }
+          gridmap.processesAsBackgroundShade({
+            container: container,
+            facet: "." + facet.uuid,
+            cell: "." + d.key,
+            signalData: facet.props[d.key],
+            data: d.values,
+            minY: min,
+            maxY: max,
+            meanLine: true,
+            opacity: props.processOpacity,
+            margin: props.trendEnabled ? props.trendHeight : 0,
+            field: field
+          });
+        }
+
+        if (props.gaugeEnabled && !props.trendOverride) {
+          gridmap.addSignalsAsGlyphsAngleAsMean({
+            container: container,
+            cell: "." + d.key,
+            facet: "." + facet.uuid,
+            signalData: facet.props[d.key],
+            data: d.values,
+            opacity: props.gaugeOpacity,
+            exception: props.gaugeException,
+            strokeColour: props.gaugeColour,
+            posColour: props.signalAboveColour,
+            negColour: props.signalBelowColour
+          });
+        }
+
+        if (props.trendEnabled) {
+          gridmap.addSignalsAsTrendChannel({
+            container: container,
+            facet: "." + facet.uuid,
+            cell: "." + d.key,
+            signalData: facet.props[d.key],
+            data: d.values,
+            size: !props.trendOverride ? props.trendHeight : 0.5
+          });
+
+        }
+        //gridmap.addSignalsAsGlyphsAngleAsMean({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, today: today, opacity: 0.8, signalDescriptors: signalDescriptors});
+        //gridmap.addSignalsAsTrendChannel({container: ".grid", cell: "." + d.key, signalData: properties[d.key], data: d.values, signalDescriptors: signalDescriptors});
+
+      });
+    });
   }
 
   componentDidUpdate() {
-    if (this.state.initRender == 1) {
-      let smwgData = this.props.gridData;
+    if (this.state.initRender == 1 ) {
 
-      let npuColours = d3.scaleOrdinal()
-      .domain(d3.map(smwgData, function(d){return d.NPU;}).keys())
-      .range(Const.npuColours);
-
-      let popColours = d3.scaleLinear()
-      .domain(d3.extent(smwgData, function(d) { return +d.pop2011}))
-      .range(["#00BDA6","#EB4551"]);
-
-      let data = smwgData
-      let type = "NPU";
-      let opacity = 0.5;
-      d3.select(this.gridMapContainer).html("");
-      gridmap.draw({
-        data: data,
-        container: this.gridMapContainer,
-        tooltip: null,
-        colourScale: type === "NPU" ? npuColours : popColours,
-        colourAttribute: type,
-        strokeColour : function (d) { return "#FFFFFF";},
-        offsetX: 1,
-        offsetY: 0,
-        opacity: this.props.bgOpacity,
-        cellHoverHandler: this.props.handleHightedCell,
-        cellSelectionHandler: this.props.handleCellSelection,
-        cellDeselectionHandler: this.props.handleCellDeselection,
-      });
       this.redraw(this.props);
 
       this.setState({initRender: 2});

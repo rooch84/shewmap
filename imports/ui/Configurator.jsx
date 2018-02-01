@@ -83,6 +83,10 @@ export default class Configurator extends Component {
     return (Const.processScaleTypes.map( (e) => { return(<MenuItem key={e.id} value={e.id} primaryText={e.name} />) } ));
   }
 
+  processFacetFields() {
+    return (this.props.facetFields.map( (e) => { return(<MenuItem key={e} value={e} primaryText={e.replace(/__/g, "")} />) } ));
+  }
+
   renderItems() {
     items = [
       <ConfigItem key="1" title="Background" enabled={this.props.bgEnabled} enabledChangeHander={this.props.bgEnabledChangeHandler}>
@@ -257,6 +261,12 @@ export default class Configurator extends Component {
             value={this.props.maxDate}
             onChange={this.props.maxDateChangeHandler}
             />
+        </div>
+        <div className="config-item-row">
+          <span className="config-item__row-item">Facet on</span>
+            <DropDownMenu className="config-item__row-item" value={this.props.facetField} onChange={this.props.facetFieldChangeHandler}>
+              {this.processFacetFields()}
+            </DropDownMenu>
         </div>
 
       </ConfigItem>

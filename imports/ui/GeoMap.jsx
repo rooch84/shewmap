@@ -35,8 +35,13 @@ class GeoMap extends Component {
       }
 
       if (nextProps.highlightedCell !== this.props.highlightedCell) {
-        geo.removeHighlight(this.geoMapContainer, "." + this.props.highlightedCell);
-        geo.addHighlight(this.geoMapContainer, "." + nextProps.highlightedCell);
+
+        if (this.props.highlightedCell.nest !== "all") {
+          geo.removeHighlight(this.geoMapContainer, "." + this.props.highlightedCell.cell);
+        }
+        if (nextProps.highlightedCell.nest !== "all") {
+          geo.addHighlight(this.geoMapContainer, "." + nextProps.highlightedCell.cell);
+        }
       }
 
       if (
@@ -45,7 +50,7 @@ class GeoMap extends Component {
         nextProps.bgOpacity !== this.props.bgOpacity ||
         nextProps.signalChange !== this.props.signalChange
       ) {
-        this.redraw(nextProps);
+      //  this.redraw(nextProps);
       }
     }
   }
@@ -91,7 +96,7 @@ class GeoMap extends Component {
         opacity: this.props.bgOpacity,
         cellHoverHandler: this.props.handleHightedCell,
       });
-      this.redraw(this.props);
+      //this.redraw(this.props);
       this.setState({initRender: false});
     }
 

@@ -10,7 +10,7 @@ import Paper from 'material-ui/Paper';
 import {Toolbar, ToolbarGroup, ToolbarTitle} from 'material-ui/Toolbar';
 import * as d3 from 'd3';
 import * as pako from 'pako';
-
+const uuidv1 = require('uuid/v1');
 import * as spc from '@valcri/spc-sd'
 
 import Canvas from './Canvas.jsx';
@@ -63,18 +63,21 @@ class App extends Component {
       rowHeight: 0,
       rows: 18,
       space: 11,
-      highlightedCell: "",
+      highlightedCell: {nest: "all", facet: "", cell: ""},
       selectionLocked: false,
-      signals: {},
       signalUpdate: false,
       data:[],
       dataLoaded: false,
       signalsReady: false,
       dateAggregation: Const.defaultFormat.id,
       signalChange: Math.random(),
-      autoDetectProcess: false,
+      autoDetectProcess: true,
       minDate: new Date(),
       maxDate: new Date(),
+      facetFields: [],
+      facetOn: "__none__",
+      neighbourhoodField: "",
+      npuField: "",
     }
   };
 
@@ -91,357 +94,533 @@ class App extends Component {
     return function(e, i, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
   }
 
+  onFacetChange = (e, i, v) => {
+    let facetOn = v;
+
+    this.state.data.facet.data = this.rollFacetData(
+      this.state.raw_data,
+      this.state.dateAggregation,
+      this.state.minDate,
+      this.state.maxDate,
+      this.state.neighbourhoodField,
+      this.state.npuField,
+      facetOn
+    );
+
+    this.state.data.facet.data.forEach( (d1) => {
+      d1.props = {};
+      d1.values.forEach( (d2) => {
+        d1.props[d2.key] = {
+          "autoDetectProcess" : this.state.autoDetectProcess,
+          "signalDescriptors": signalDescriptors,
+        };
+      });
+    });
+
+    this.state.data.facet.data.forEach( d => {
+      this.calculateSignals(d.values, d.props);
+    });
+
+    this.setState({
+      facetOn: v,
+      signalChange: Math.random()
+    });
+  }
+
   onDateFilterChange = (k) => {
-    return (e, v) => {
-      let nestedData = this.rollData(
+    return (e,v) => {
+      let data = this.rollData(
         this.state.raw_data,
         this.state.dateAggregation,
         k === "minDate" ? v : this.state.minDate,
-        k === "maxDate" ? v : this.state.maxDate
+        k === "maxDate" ? v : this.state.maxDate,
+        this.state.neighbourhoodField,
+        this.state.npuField,
+        this.state.facetOn
       );
 
-
+      this.populateSignals(data, this.state.autoDetectProcess);
 
       this.setState({
         [k]: v,
-        data: nestedData,
+        data: data,
         signalChange: Math.random(),
-      }) }
-    }
-
-    onSignalsChange = (c, s) => {
-      this.state.signals[c] = s;
-      for (let i of this.state.data) {
-        if (i.key === c) {
-          spc.getSignals(i.values, this.state.signals[c]);
-        }
-      }
-
-      this.setState({
-        signalChange: Math.random(),
-      })
-    }
-
-    onAutoDetectProcessChange = (e, a) => {
-      this.state.data.forEach(d => {
-        this.state.signals[d.key].autoDetectProcess = a;
-      });
-      this.calculateSignals(this.state.data, this.state.signals);
-      this.setState({
-        signalChange: Math.random(),
-        autoDetectProcess: a,
       });
     }
+  }
 
+  // TODO
+  onSignalsChange = (c, s) => {
+    var data = {...this.state.data}
+    console.log(c);
+    console.log(s);
 
-    onCellHightlight = (cell) => {
-      if (!this.state.selectionLocked) {
-        this.setState({highlightedCell: cell});
-      }
-    }
-
-    onCellSelection = (cell) => {
-      this.setState({highlightedCell: cell, selectionLocked: true});
-    }
-
-    onSelectionModeChange = () => {
-      this.setState({selectionLocked: !this.state.selectionLocked});
-    }
-
-    onCellDeselection = (cell) => {
-      this.setState({selectionLocked: false});
-    }
-
-    calculateSignals = (data, signals) => {
-      var maxVal = 0;
-      var volMaxVal = 0;
-      var minVal = Number.MAX_SAFE_INTEGER;
-      var volMinVal = Number.MAX_SAFE_INTEGER;
-      var maxRatio = 0;
-      let gridData = d3.csvParse(this.props.gridData._id);
-
-
-      data.forEach(function(d) {
-        d.values.sort(function(a,b) {return a.Date-b.Date;});
-
-        var mean = d3.mean(d.values, function(d1) { return d1.Count});
-        var sd = d3.deviation(d.values, function(d1) { return d1.Count});
-        var ratio = sd / mean;
-
-        if (mean + 3 * sd > maxVal) {
-          maxVal = mean + 3 * sd;
-        }
-        if (mean - 3 * sd < minVal) {
-          minVal = mean - 3 * sd;
-        }
-        if (ratio > maxRatio) {
-          maxRatio = ratio;
-        }
-
-
-        for (let n of gridData) {
-          if (n.Neigh_code == d.key) {
-            for (let m of d.values) {
-              if (n.pop2011 == 0) {
-                m.Volume = 0;
-              } else {
-                m.Volume = m.Count /  n.pop2011;
-              }
+    if (c.nest === "all") {
+      data.all.props = s;
+      spc.getSignals(data.all.data, data.all.props);
+    } else if (c.nest === "NPU" || c.nest === "neighbourhood") {
+      data[c.nest].data.pops[c.cell] == s;
+      spc.getSignals(data[i].data[c.cell], data[i].props[c.cell]);
+    } else if (c.nest === "facet") {
+      for (let e of data.facet.data) {
+        if (e.key === c.facet) {
+          e.props[c.cell] = s;
+          for (let e2 of e.values) {
+            if (e2.key === c.cell) {
+              spc.getSignals(e2.values, e.props[c.cell]);
+              break;
             }
           }
         }
-
-        var volMean = d3.mean(d.values, function(d1) { return d1.Volume});
-        var volSd = d3.deviation(d.values, function(d1) { return d1.Volume});
-
-        if (volMean + 3 * volSd > volMaxVal) {
-          volMaxVal = volMean + 3 * volSd;
-        }
-        if (volMean - 3 * volSd < volMinVal) {
-          volMinVal = volMean - 3 * volSd;
-        }
-
-        spc.getSignals(d.values, signals[d.key]);
-
-      });
-
-      data.forEach(function(d) {
-        d.max = d3.max(signals[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
-        d.min = d3.min(signals[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
-        d.mean = d3.mean(d.values, function(d1) { return d1.Count});
-        d.minGlobalVar = d.mean - 3.5 * d.mean * maxRatio;
-        d.maxGlobalVar = d.mean + 3.5 * d.mean * maxRatio;
-        d.minGlobalCount = minVal;
-        d.maxGlobalCount = maxVal;
-        d.minVolume = volMinVal;
-        d.maxVolume = volMaxVal;
-      });
+      }
     }
 
-    componentDidUpdate() {
-      if (this.props.data && !this.state.dataLoaded) {
 
-        let win1251decoder = new TextDecoder('utf-8');
-        let result = d3.csvParse(win1251decoder.decode(pako.inflate(this.props.data.data)));
-        let ds = Const.exampleDatasets[this.props.datasetId];
-        this.loadDataset(result, ds.Date, ds.npu, ds.neighbourhood, ds.aggregateBy);
-      };
-      if (this.props.dataReady && this.props.profileReady && this.state.dataLoaded) {
-        if (this.props.profile !== undefined) {
-          const height = this.gridContainer.clientHeight;
-          const _rowHeight = height / this.state.rows - this.state.space;
-          if (this.state.rowHeight !== _rowHeight)
-          this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
-        }
-        if (util.isEmpty(this.state.signals)) {
-          var properties = {};
-          this.state.data.forEach( (d) => {
-            properties[d.key]  = {
-              "autoDetectProcess" : this.state.autoDetectProcess,
-              "signalDescriptors": signalDescriptors,
-            }
-          })
+    console.log(this.state.data.facet);
 
-          this.calculateSignals(this.state.data, properties);
-          //console.log(this.state.signals);
+    this.setState({
+      data: data,
+      signalChange: Math.random(),
+    })
+  }
 
-          this.setState({signals: properties, signalsReady: true});
+  onAutoDetectProcessChange = (e, a) => {
+    this.populateSignals(this.state.data, a);
+    this.setState({
+      signalChange: Math.random(),
+      autoDetectProcess: a,
+    });
+  }
+
+
+  onCellHightlight = (cell) => {
+    if (!this.state.selectionLocked) {
+      this.setState({highlightedCell: cell});
+    }
+  }
+
+  onCellSelection = (cell) => {
+    this.setState({highlightedCell: cell, selectionLocked: true});
+  }
+
+  onSelectionModeChange = () => {
+    this.setState({selectionLocked: !this.state.selectionLocked});
+  }
+
+  onCellDeselection = (cell) => {
+    this.setState({selectionLocked: false,  highlightedCell: {nest: "all", facet: "", cell: ""}
+  });
+}
+
+calculateSignals = (data, signals) => {
+
+  var maxVal = 0;
+  var volMaxVal = 0;
+  var minVal = Number.MAX_SAFE_INTEGER;
+  var volMinVal = Number.MAX_SAFE_INTEGER;
+  var maxRatio = 0;
+  let gridData = d3.csvParse(this.props.gridData._id);
+
+  data.forEach(function(d) {
+    d.values.sort(function(a,b) {return a.Date-b.Date;});
+
+    var mean = d3.mean(d.values, function(d1) { return d1.Count});
+    var sd = d3.deviation(d.values, function(d1) { return d1.Count});
+    var ratio = sd / mean;
+
+    if (mean + 3 * sd > maxVal) {
+      maxVal = mean + 3 * sd;
+    }
+    if (mean - 3 * sd < minVal) {
+      minVal = mean - 3 * sd;
+    }
+    if (ratio > maxRatio) {
+      maxRatio = ratio;
+    }
+
+
+    for (let n of gridData) {
+      if (n.Neigh_code == d.key) {
+        for (let m of d.values) {
+          if (n.pop2011 == 0) {
+            m.Volume = 0;
+          } else {
+            m.Volume = m.Count /  n.pop2011;
+          }
         }
       }
     }
 
-    loadDataset = (data, dataField, npuField, neighbourhoodField, defaultAggregation) => {
-      data.forEach( function (d) {
-        d.Date = d3.timeParse(Const.dateFormat)(d.Date);
-        for (let key of Object.keys(Const.dateAggregations)) {
-          d[Const.dateAggregations[key].field] = d3.timeFormat(Const.dateAggregations[key].format)(d.Date);
-        }
-      });
+    var volMean = d3.mean(d.values, function(d1) { return d1.Volume});
+    var volSd = d3.deviation(d.values, function(d1) { return d1.Volume});
 
-      let minDate = d3.min(data, function(d) {return d.Date});
-      let maxDate = d3.max(data, function(d) {return d.Date});
-
-      let nestedData = this.rollData(data, defaultAggregation, minDate, maxDate);
-
-      this.setState({
-        raw_data: data,
-        data: nestedData,
-        dateAggregation: defaultAggregation,
-        dataLoaded: true,
-        minDate: minDate,
-        maxDate: maxDate,
-      })
+    if (volMean + 3 * volSd > volMaxVal) {
+      volMaxVal = volMean + 3 * volSd;
+    }
+    if (volMean - 3 * volSd < volMinVal) {
+      volMinVal = volMean - 3 * volSd;
     }
 
-    rollData(data, agg, minDate, maxDate) {
-      let nData = d3.nest()
-      .key(function(d) { return d.neighbourhood; })
-      .key(function(d) { return d[Const.dateAggregations[agg].field]; })
-      .rollup(function(v) {
-        return v.length;
-      })
-      .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+    spc.getSignals(d.values, signals[d.key]);
 
-      nData.forEach( function(d) {
+  });
 
-        d.values.forEach( function (d) {
-          d.Date = d3.timeParse(Const.dateAggregations[agg].format)(d.key);
-          d.Count = +d.value;
-        });
-      })
-      return nData;
+  data.forEach(function(d) {
+    d.max = d3.max(signals[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
+    d.min = d3.min(signals[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
+    d.mean = d3.mean(d.values, function(d1) { return d1.Count});
+    d.minGlobalVar = d.mean - 3.5 * d.mean * maxRatio;
+    d.maxGlobalVar = d.mean + 3.5 * d.mean * maxRatio;
+    d.minGlobalCount = minVal;
+    d.maxGlobalCount = maxVal;
+    d.minVolume = volMinVal;
+    d.maxVolume = volMaxVal;
+  });
+}
+
+populateSignals(data, autoDetectProcess) {
+  data.facet.data.forEach( (d1) => {
+    d1.props = {};
+    d1.values.forEach( (d2) => {
+      d1.props[d2.key] = {
+        "autoDetectProcess" : autoDetectProcess,
+        "signalDescriptors": signalDescriptors,
+      };
+    });
+  });
+
+  for (let i of ["neighbourhood", "npu"]) {
+    data[i].props = {};
+    data[i].data.forEach( d => {
+      data[i].props[d.key] = {
+        "autoDetectProcess" : autoDetectProcess,
+        "signalDescriptors": signalDescriptors,
+      };
+    });
+  }
+
+  data.facet.data.forEach( d => {
+    this.calculateSignals(d.values, d.props);
+  });
+
+  data.all.props = {
+    "autoDetectProcess" : autoDetectProcess,
+    "signalDescriptors": signalDescriptors,
+  };
+
+  spc.getSignals(data.all.data, data.all.props);
+
+  for (let i of ["neighbourhood", "npu"]) {
+    this.calculateSignals(data[i].data, data[i].props);
+  }
+}
+
+componentDidUpdate() {
+  if (this.props.data && !this.state.dataLoaded) {
+
+    let win1251decoder = new TextDecoder('utf-8');
+    let result = d3.csvParse(win1251decoder.decode(pako.inflate(this.props.data.data)));
+    let ds = Const.exampleDatasets[this.props.datasetId];
+    this.loadDataset(result, ds.Date, ds.npu, ds.neighbourhood, ds.aggregateBy);
+  };
+  if (this.props.dataReady && this.props.profileReady && this.state.dataLoaded) {
+    if (this.props.profile !== undefined) {
+      const height = this.gridContainer.clientHeight;
+      const _rowHeight = height / this.state.rows - this.state.space;
+      if (this.state.rowHeight !== _rowHeight)
+      this.setState({ rowHeight: _rowHeight });  // Abitary values, bit of a hack.
     }
+    if (!this.state.signalsReady) {
 
-    render() {
-      if (!this.props.dataReady || !this.props.gridDataReady) return <span></span>
-      let {leftOpen, space, ...canvasProps}  = this.state;
-      let {_id, userId, name, createdAt, lastAccessed, ...configSettings} = this.props.profile ? this.props.profile : {};
-      return (
-        <MuiThemeProvider>
-          <div className="container">
+      this.populateSignals(this.state.data, this.state.autoDetectProcess);
 
-            <Toolbar className="main-header">
-              <ToolbarGroup firstChild={true}>
-                <IconButton iconStyle={{color: "white"}} tooltip="Configure Grid" onClick={this.handleLeftOpen}>
-                  <FontIcon className="material-icons mi-button">menu</FontIcon>
-                </IconButton>
-                <Logo />
-                <ToolbarTitle style={{color: "white"}} text="ShewMap v0.1" />
-              </ToolbarGroup>
-              <ToolbarGroup lastChild={true}>
-                  <AccountsUIWrapper />
-                <IconButton iconStyle={{color: "white"}} tooltip="Options" onClick={this.handleRightOpen}>
-                  <FontIcon className="material-icons mi-button">menu</FontIcon>
-                </IconButton>
-              </ToolbarGroup>
-            </Toolbar>
-            <Drawer
-              docked={false}
-              open={this.state.leftOpen}
-              onRequestChange={(leftOpen) => this.setState({leftOpen})}
-              width={350}
-              >
-              {this.renderConfigurator(configSettings)}
-            </Drawer>
-            <Drawer
-              docked={false}
-              openSecondary={true}
-              open={this.state.rightOpen}
-              onRequestChange={(rightOpen) => this.setState({rightOpen})}
-              width={350}
-              >
-              <Menu />
-            </Drawer>
-            {this.renderMain(configSettings)}
-          </div>
-        </MuiThemeProvider>
-      );
+      this.setState({signalsReady: true});
     }
+  }
+}
 
-    renderConfigurator(configSettings) {
-      if (!this.props.profile) return (<span></span>)
-      return (
-        <Configurator
-          bgEnabledChangeHandler={this.onConfigChange("bgEnabled")}
-          bgOpacityChangeHandler={this.onConfigChange("bgOpacity")}
-          signalEnabledChangeHandler={this.onConfigChange("signalEnabled")}
-          signalTypeChangeHandler={this.onConfigChange("signalType")}
-          signalOpacityChangeHandler={this.onConfigChange("signalOpacity")}
-          signalColourChangeHandler={this.onColourChange("signalColour")}
-          signalBelowColourChangeHandler={this.onColourChange("signalBelowColour")}
-          signalAboveColourChangeHandler={this.onColourChange("signalAboveColour")}
-          bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
-          processEnabledChangeHandler={this.onConfigChange("processEnabled")}
-          processOpacityChangeHandler={this.onConfigChange("processOpacity")}
-          processScaleChangeHandler={this.onSelectionChange("processScale")}
-          gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
-          gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
-          gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}
-          gaugeColourChangeHandler={this.onColourChange("gaugeColour")}
-          trendEnabledChangeHandler={this.onConfigChange("trendEnabled")}
-          trendHeightChangeHandler={this.onConfigChange("trendHeight")}
-          trendOverrideChangeHandler={this.onConfigChange("trendOverride")}
-          autoDetectProcessChangeHandler={this.onAutoDetectProcessChange}
-          autoDetectProcess={this.state.autoDetectProcess}
-          minDate={this.state.minDate}
-          maxDate={this.state.maxDate}
-          minDateChangeHandler={this.onDateFilterChange("minDate")}
-          maxDateChangeHandler={this.onDateFilterChange("maxDate")}
-          {...configSettings}
-          />
-      )
+loadDataset = (data, dataField, npuField, neighbourhoodField, defaultAggregation) => {
+  data.forEach( function (d) {
+    d.Date = d3.timeParse(Const.dateFormat)(d.Date);
+    for (let key of Object.keys(Const.dateAggregations)) {
+      d[Const.dateAggregations[key].field] = d3.timeFormat(Const.dateAggregations[key].format)(d.Date);
     }
+  });
 
-    paperContainer(m) {
-      return (
-        <div className="paper-outer">
-          <Paper className="paper-inner" zDepth={2} >
-            {m}
-          </Paper>
-        </div>
-      )
-    }
+  let minDate = d3.min(data, function(d) {return d.Date});
+  let maxDate = d3.max(data, function(d) {return d.Date});
 
-    renderMain(props) {
-      if (!Meteor.userId()) {
-        return (this.paperContainer(<div className="message">Please login to continue</div>))
-      } else if (!this.props.profileReady) {
-        return (<span></span>)
-      } else if (this.props.profile === undefined) {
-        return (this.paperContainer(<div className="message">Create a profile to start</div>))
-      } else if (!this.state.dataLoaded) {
-        return (this.paperContainer(<DataImporter loadDataset={this.loadDataset} loadExampleDataSet={this.props.onExampleDatasetSelection}/>))
-      } else if (this.state.dataLoaded) {
-        return(
-          <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
-            <Canvas
-              data={this.state.data}
-              handleHightedCell={this.onCellHightlight}
-              handleCellSelection={this.onCellSelection}
-              handleCellDeselection={this.onCellDeselection}
-              handleSelectionModeChange={this.onSelectionModeChange}
-              {...props}
-              data={this.state.data}
-              signals={this.state.signals}
-              rowHeight={this.state.rowHeight}
-              rows={this.state.rows}
-              highlightedCell={this.state.highlightedCell}
-              highlightedCell={this.state.highlightedCell}
-              gridData={d3.csvParse(this.props.gridData._id)}
-              selectionLocked={this.state.selectionLocked}
-              onHandleLayoutChange={this.onConfigChange("layout")}
-              onSignalsChange={this.onSignalsChange}
-              signalChange={this.state.signalChange}
-              />
-          </div>
-        )
-      } else {
-        return (<span></span>)
+  let nestedData = this.rollData(data, defaultAggregation, minDate, maxDate, neighbourhoodField, npuField, this.state.facetOn);
+
+  let facetFields = ["__none__"];
+
+  if (data.length > 0) {
+    for (let key of Object.keys(data[0])) {
+      if (isNaN(data[0][key]) && data[0][key] !== "NA" && !(key.startsWith("__"))) {
+        facetFields.push(key);
       }
     }
   }
 
-  App.propTypes = {
-    data: PropTypes.object,
-    profile: PropTypes.object,
-    gridData: PropTypes.object,
-    profileReady: PropTypes.bool.isRequired,
-    dataReady: PropTypes.bool.isRequired,
-    gridDataReady: PropTypes.bool.isRequired,
-    onExampleDatasetSelection: PropTypes.func.isRequired,
-    datasetId: PropTypes.string.isRequired
-  };
+  this.setState({
+    raw_data: data,
+    data: nestedData,
+    dateAggregation: defaultAggregation,
+    dataLoaded: true,
+    minDate: minDate,
+    maxDate: maxDate,
+    npuField: npuField,
+    neighbourhoodField: neighbourhoodField,
+    facetFields: facetFields,
+  })
+}
 
-  export default withTracker((props) => {
-    const handler1 = Meteor.subscribe('demoBinary', props.datasetId);
-    const handler2 = Meteor.subscribe('profiles');
-    const handler3 = Meteor.subscribe('gridData');
-    return {
-      dataReady: handler1.ready(),
-      profileReady: handler2.ready(),
-      gridDataReady: handler3.ready(),
-      data: Data.findOne({_id: "data"}),
-      profile: Profiles.findOne({userId: Meteor.userId, name: { $ne: "default" }}, { sort: { lastAccessed: -1 }}),
-      gridData: GridData.findOne(),
-    };
-  })(App);
+rollData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
+
+  let npuData = d3.nest()
+  .key(function(d) { return d[npuField]; })
+  .key(function(d) { return d[Const.dateAggregations[agg].field]; })
+  .rollup(function(v) {
+    return v.length;
+  })
+  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+
+  let neighbourhoodData = d3.nest()
+  .key(function(d) { return d[nField]; })
+  .key(function(d) { return d[Const.dateAggregations[agg].field]; })
+  .rollup(function(v) {
+    return v.length;
+  })
+  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+
+  let allData = d3.nest()
+  .key(function(d) { return d[Const.dateAggregations[agg].field]; })
+  .rollup(function(v) {
+    return v.length;
+  })
+  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+
+  npuData.forEach( function(d) {
+    d.values.forEach( function (d2) {
+      d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
+      d2.Count = +d2.value;
+    });
+  });
+
+  neighbourhoodData.forEach( function(d) {
+    d.values.forEach( function (d2) {
+      d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
+      d2.Count = +d2.value;
+    });
+  });
+
+  allData.forEach( function(d2) {
+    d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
+    d2.Count = +d2.value;
+  });
+
+  let nData = {
+    facet: {
+      data: this.rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn),
+    },
+    npu: {
+      data: npuData,
+    },
+    neighbourhood: {
+      data: neighbourhoodData,
+    },
+    all: {
+      data: allData,
+    }
+  }
+
+  return nData;
+}
+
+rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
+  let facetData = d3.nest()
+  .key(function(d) { return facetOn === '__none__' ? facetOn : d[facetOn]; })
+  .key(function(d) { return d[nField]; })
+  .key(function(d) { return d[Const.dateAggregations[agg].field]; })
+  .rollup(function(v) {
+    return v.length;
+  })
+  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+
+  facetData.forEach( function(d) {
+    d.uuid = "class_" + uuidv1();
+    d.values.forEach( function (d1) {
+      d1.values.forEach( function (d2) {
+        d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
+        d2.Count = +d2.value;
+      });
+    });
+  });
+
+  return facetData;
+
+}
+
+render() {
+  if (!this.props.dataReady || !this.props.gridDataReady) return <span></span>
+  let {leftOpen, space, ...canvasProps}  = this.state;
+  let {_id, userId, name, createdAt, lastAccessed, ...configSettings} = this.props.profile ? this.props.profile : {};
+  return (
+    <MuiThemeProvider>
+      <div className="container">
+
+        <Toolbar className="main-header">
+          <ToolbarGroup firstChild={true}>
+            <IconButton iconStyle={{color: "white"}} tooltip="Configure Grid" onClick={this.handleLeftOpen}>
+              <FontIcon className="material-icons mi-button">menu</FontIcon>
+            </IconButton>
+            <Logo />
+            <ToolbarTitle style={{color: "white"}} text="ShewMap v0.1" />
+          </ToolbarGroup>
+          <ToolbarGroup lastChild={true}>
+            {Meteor.userId() ? <IconButton
+              iconStyle={{color: "white"}}
+              tooltip="Show raw SPC"
+              onClick={e => this.setState({
+                highlightedCell: {nest: "all"},
+                selectionLocked: false,
+              })}>
+              <FontIcon className="material-icons mi-button">show_chart</FontIcon>
+            </IconButton> : <span></span> }
+            <AccountsUIWrapper />
+            <IconButton iconStyle={{color: "white"}} tooltip="Options" onClick={this.handleRightOpen}>
+              <FontIcon className="material-icons mi-button">menu</FontIcon>
+            </IconButton>
+          </ToolbarGroup>
+        </Toolbar>
+        <Drawer
+          docked={false}
+          open={this.state.leftOpen}
+          onRequestChange={(leftOpen) => this.setState({leftOpen})}
+          width={350}
+          >
+          {this.renderConfigurator(configSettings)}
+        </Drawer>
+        <Drawer
+          docked={false}
+          openSecondary={true}
+          open={this.state.rightOpen}
+          onRequestChange={(rightOpen) => this.setState({rightOpen})}
+          width={350}
+          >
+          <Menu />
+        </Drawer>
+        {this.renderMain(configSettings)}
+      </div>
+    </MuiThemeProvider>
+  );
+}
+
+renderConfigurator(configSettings) {
+  if (!this.props.profile) return (<span></span>)
+  return (
+    <Configurator
+      bgEnabledChangeHandler={this.onConfigChange("bgEnabled")}
+      bgOpacityChangeHandler={this.onConfigChange("bgOpacity")}
+      signalEnabledChangeHandler={this.onConfigChange("signalEnabled")}
+      signalTypeChangeHandler={this.onConfigChange("signalType")}
+      signalOpacityChangeHandler={this.onConfigChange("signalOpacity")}
+      signalColourChangeHandler={this.onColourChange("signalColour")}
+      signalBelowColourChangeHandler={this.onColourChange("signalBelowColour")}
+      signalAboveColourChangeHandler={this.onColourChange("signalAboveColour")}
+      bivariateSignalColoursChangeHandler={this.onConfigChange("bivariateSignalColours")}
+      processEnabledChangeHandler={this.onConfigChange("processEnabled")}
+      processOpacityChangeHandler={this.onConfigChange("processOpacity")}
+      processScaleChangeHandler={this.onSelectionChange("processScale")}
+      gaugeEnabledChangeHandler={this.onConfigChange("gaugeEnabled")}
+      gaugeOpacityChangeHandler={this.onConfigChange("gaugeOpacity")}
+      gaugeExceptionChangeHandler={this.onConfigChange("gaugeException")}
+      gaugeColourChangeHandler={this.onColourChange("gaugeColour")}
+      trendEnabledChangeHandler={this.onConfigChange("trendEnabled")}
+      trendHeightChangeHandler={this.onConfigChange("trendHeight")}
+      trendOverrideChangeHandler={this.onConfigChange("trendOverride")}
+      autoDetectProcessChangeHandler={this.onAutoDetectProcessChange}
+      autoDetectProcess={this.state.autoDetectProcess}
+      minDate={this.state.minDate}
+      maxDate={this.state.maxDate}
+      minDateChangeHandler={this.onDateFilterChange("minDate")}
+      maxDateChangeHandler={this.onDateFilterChange("maxDate")}
+      facetFields={this.state.facetFields}
+      facetFieldChangeHandler={this.onFacetChange}
+      facetField={this.state.facetOn}
+      {...configSettings}
+      />
+  )
+}
+
+paperContainer(m) {
+  return (
+    <div className="paper-outer">
+      <Paper className="paper-inner" zDepth={2} >
+        {m}
+      </Paper>
+    </div>
+  )
+}
+
+renderMain(props) {
+  if (!Meteor.userId()) {
+    return (this.paperContainer(<div className="message">Please login to continue</div>))
+  } else if (!this.props.profileReady) {
+    return (<span></span>)
+  } else if (this.props.profile === undefined) {
+    return (this.paperContainer(<div className="message">Create a profile to start</div>))
+  } else if (!this.state.dataLoaded) {
+    return (this.paperContainer(<DataImporter loadDataset={this.loadDataset} loadExampleDataSet={this.props.onExampleDatasetSelection}/>))
+  } else if (this.state.dataLoaded) {
+    return(
+      <div className="grid-container" ref={ (gridContainer) => this.gridContainer = gridContainer} >
+        <Canvas
+          data={this.state.data}
+          handleHightedCell={this.onCellHightlight}
+          handleCellSelection={this.onCellSelection}
+          handleCellDeselection={this.onCellDeselection}
+          handleSelectionModeChange={this.onSelectionModeChange}
+          {...props}
+          rowHeight={this.state.rowHeight}
+          rows={this.state.rows}
+          highlightedCell={this.state.highlightedCell}
+          highlightedCell={this.state.highlightedCell}
+          gridData={d3.csvParse(this.props.gridData._id)}
+          selectionLocked={this.state.selectionLocked}
+          onHandleLayoutChange={this.onConfigChange("layout")}
+          onSignalsChange={this.onSignalsChange}
+          signalChange={this.state.signalChange}
+          />
+      </div>
+    )
+  } else {
+    return (<span></span>)
+  }
+}
+}
+
+App.propTypes = {
+  data: PropTypes.object,
+  profile: PropTypes.object,
+  gridData: PropTypes.object,
+  profileReady: PropTypes.bool.isRequired,
+  dataReady: PropTypes.bool.isRequired,
+  gridDataReady: PropTypes.bool.isRequired,
+  onExampleDatasetSelection: PropTypes.func.isRequired,
+  datasetId: PropTypes.string.isRequired
+};
+
+export default withTracker((props) => {
+  const handler1 = Meteor.subscribe('demoBinary', props.datasetId);
+  const handler2 = Meteor.subscribe('profiles');
+  const handler3 = Meteor.subscribe('gridData');
+  return {
+    dataReady: handler1.ready(),
+    profileReady: handler2.ready(),
+    gridDataReady: handler3.ready(),
+    data: Data.findOne({_id: "data"}),
+    profile: Profiles.findOne({userId: Meteor.userId, name: { $ne: "default" }}, { sort: { lastAccessed: -1 }}),
+    gridData: GridData.findOne(),
+  };
+})(App);

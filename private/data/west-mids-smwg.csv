@@ -36,7 +36,7 @@
 "35","BWJC",12,6,"BWJC","Soho Road","Ladywood West","BWSJ","Birmingham West","BW","Birmingham","12978","4541",-1.937656,52.500803
 "36","BWJD",12,7,"BWJD","Winson Green","Ladywood West","BWSJ","Birmingham West","BW","Birmingham","17233","5721",-1.936995,52.488746
 "37","BWKA",13,10,"BWKA","Kings Norton","Northfield","BWSK","Birmingham West","BW","Birmingham","24226","10216",-1.935912,52.40273
-"38","BWKB",8,10,"BWKB","Longbridge","Northfield","BWSK","Birmingham West","BW","Birmingham","25128","10664",-2.001147,52.398041
+"38","BWKB",11,10,"BWKB","Longbridge","Northfield","BWSK","Birmingham West","BW","Birmingham","25128","10664",-2.001147,52.398041
 "39","BWKC",12,10,"BWKC","Northfield","Northfield","BWSK","Birmingham West","BW","Birmingham","26025","11521",-1.967304,52.403094
 "40","BWKD",11,9,"BWKD","Weoley","Northfield","BWSK","Birmingham West","BW","Birmingham","25573","10635",-1.968555,52.427108
 "41","BWLA",12,5,"BWLA","Handsworth Wood","Perry Barr","BWSL","Birmingham West","BW","Birmingham","27642","9223",-1.940813,52.520024
@@ -105,7 +105,7 @@
 "104","SHBC",18,9,"SHBC","Olton","Solihull","SHSB","Solihull","SH","Solihull","12679","5281",-1.808818,52.431156
 "105","SHBD",17,10,"SHBD","Shirley East","Solihull","SHSB","Solihull","SH","Solihull","11462","4591",-1.817922,52.412736
 "106","SHBE",18,10,"SHBE","Shirley South","Solihull","SHSB","Solihull","SH","Solihull","12410","5190",-1.81667,52.39875
-"107","SHBF",15,11,"SHBF","Shirley West","Solihull","SHSB","Solihull","SH","Solihull","11943","5038",-1.844054,52.408183
+"107","SHBF",16,11,"SHBF","Shirley West","Solihull","SHSB","Solihull","SH","Solihull","11943","5038",-1.844054,52.408183
 "108","SHBG",19,9,"SHBG","Silhill","Solihull","SHSB","Solihull","SH","Solihull","12008","5083",-1.779074,52.422096
 "109","SHBH",19,10,"SHBH","St Alphege","Solihull","SHSB","Solihull","SH","Solihull","12983","5125",-1.785057,52.406989
 "110","SWAK",11,4,"SWAK","Charlemont with Grove Vale","Sandwell North","SWSA","Sandwell","SW","Sandwell","12134","5049",-1.969572,52.543855

@@ -17,7 +17,7 @@ export default class Meta extends Component {
     let population = "";
 
     for (let row of this.props.gridData) {
-      if (row.region === this.props.highlightedCell) {
+      if (row.region === this.props.highlightedCell.cell) {
         neighbourhood += row.Neighbourh;
         npu += row.NPU;
         population += "Population of " + row.pop2011;

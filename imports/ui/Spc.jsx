@@ -15,18 +15,43 @@ export default class Spc extends Component {
   componentWillReceiveProps(nextProps) {
     if (
       nextProps.highlightedCell !== this.props.highlightedCell  ||
-      nextProps.signalChange !== this.props.signalChange 
+      nextProps.signalChange !== this.props.signalChange
     ) {
-      this.setState({rendered: false});
+      let rendered = false;
       d3.select(this.spcElement).html("");
-      for (let row of this.props.data) {
-        if (row.key === nextProps.highlightedCell) {
-          this.props.signals[nextProps.highlightedCell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
-          spc.displayChart(row.values, this.spcElement, this.props.signals[nextProps.highlightedCell], this.updateSignals(nextProps.highlightedCell));
-          this.setState({rendered: true});
-          break;
+      let signals = {};
+      if (nextProps.highlightedCell.nest === "facet") {
+        for (let facet of this.props.data.facet.data) {
+          if (facet.key === nextProps.highlightedCell.facet) {
+            for (let row of facet.values) {
+              if (row.key === nextProps.highlightedCell.cell) {
+                facet.props[nextProps.highlightedCell.cell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
+                spc.displayChart(row.values, this.spcElement, facet.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell));
+                signals = facet.props[nextProps.highlightedCell.cell];
+                rendered = true;
+                break;
+              }
+            }
+          }
+        }
+      } else if (nextProps.highlightedCell.nest === "all") {
+        nextProps.data.all.props.colours = [this.props.signalAboveColour, this.props.signalBelowColour];
+        spc.displayChart(nextProps.data.all.data, this.spcElement, nextProps.data.all.props, this.updateSignals(nextProps.highlightedCell));
+        signals = nextProps.data.all.props;
+        rendered = true;
+      } else if (nextProps.highlightedCell.nest === "neighbourhood" || nextProps.highlightedCell.nest === "npu") {
+        let data = nextProps.data[nextProps.highlightedCell.nest];
+        for (let row of data.data) {
+          if (row.key === nextProps.highlightedCell.cell) {
+            data.props[nextProps.highlightedCell.cell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
+            spc.displayChart(row.values, this.spcElement, data.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell));
+            signals = data.props[nextProps.highlightedCell.cell];
+            rendered = true;
+            break;
+          }
         }
       }
+      this.setState({rendered: rendered, signals: signals});
     }
   }
 
@@ -38,7 +63,7 @@ export default class Spc extends Component {
 
   componentDidUpdate() {
     if (this.props.resize && this.state.rendered) {
-      spc.resizeChart(this.spcElement, this.props.signals[this.props.highlightedCell]);
+      spc.resizeChart(this.spcElement, this.state.signals);
       this.props.resizeComplete();
     }
   }
