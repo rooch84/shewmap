@@ -78,6 +78,7 @@ class App extends Component {
       facetOn: "__none__",
       neighbourhoodField: "",
       npuField: "",
+      tooltip: {},
     }
   };
 
@@ -92,6 +93,11 @@ class App extends Component {
   }
   onSelectionChange = (k) => {
     return function(e, i, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
+  }
+  onTooltipChange = (t) => {
+    this.setState({
+      tooltip: t,
+    })
   }
 
   onDataAggregationChange = (e, i, v) => {
@@ -542,6 +548,15 @@ render() {
           <Menu />
         </Drawer>
         {this.renderMain(configSettings)}
+        <div
+          className={this.state.tooltip.show ? "tooltip" : "hidden" }
+          style={{
+            top: this.state.tooltip.y,
+            left: this.state.tooltip.x,
+          }}
+          >
+          {this.state.tooltip.message}
+        </div>
       </div>
     </MuiThemeProvider>
   );
@@ -625,6 +640,7 @@ renderMain(props) {
           onSignalsChange={this.onSignalsChange}
           signalChange={this.state.signalChange}
           facetOn={this.state.facetOn}
+          tooltipChangeHandler={this.onTooltipChange}
           />
       </div>
     )

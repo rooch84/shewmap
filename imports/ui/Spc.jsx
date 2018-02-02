@@ -26,7 +26,7 @@ export default class Spc extends Component {
             for (let row of facet.values) {
               if (row.key === nextProps.highlightedCell.cell) {
                 facet.props[nextProps.highlightedCell.cell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
-                spc.displayChart(row.values, this.spcElement, facet.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell));
+                spc.displayChart(row.values, this.spcElement, facet.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell), nextProps.tooltipChangeHandler);
                 signals = facet.props[nextProps.highlightedCell.cell];
                 rendered = true;
                 break;
@@ -36,7 +36,7 @@ export default class Spc extends Component {
         }
       } else if (nextProps.highlightedCell.nest === "all") {
         nextProps.data.all.props.colours = [this.props.signalAboveColour, this.props.signalBelowColour];
-        spc.displayChart(nextProps.data.all.data, this.spcElement, nextProps.data.all.props, this.updateSignals(nextProps.highlightedCell));
+        spc.displayChart(nextProps.data.all.data, this.spcElement, nextProps.data.all.props, this.updateSignals(nextProps.highlightedCell), nextProps.tooltipChangeHandler);
         signals = nextProps.data.all.props;
         rendered = true;
       } else if (nextProps.highlightedCell.nest === "neighbourhood" || nextProps.highlightedCell.nest === "npu") {
@@ -44,7 +44,7 @@ export default class Spc extends Component {
         for (let row of data.data) {
           if (row.key === nextProps.highlightedCell.cell) {
             data.props[nextProps.highlightedCell.cell].colours = [this.props.signalAboveColour, this.props.signalBelowColour];
-            spc.displayChart(row.values, this.spcElement, data.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell));
+            spc.displayChart(row.values, this.spcElement, data.props[nextProps.highlightedCell.cell], this.updateSignals(nextProps.highlightedCell), nextProps.tooltipChangeHandler);
             signals = data.props[nextProps.highlightedCell.cell];
             rendered = true;
             break;

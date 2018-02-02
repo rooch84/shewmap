@@ -20,12 +20,12 @@ export default class Meta extends Component {
     let sd = d3.deviation(data, d => {return d.Count});
     numSignals += numSignals == 1 ? " signal point" : " signal points";
     numRecords += numRecords == 1 ? " record" : " records";
-    chips.push(<Chip key="rec" className="chip">{numRecords}</Chip>)
-    chips.push(<Chip key="mean" className="chip">{"mean of " + mean.toFixed(2)}</Chip>)
-    chips.push(<Chip key="sd" className="chip">{"sd of " + sd.toFixed(2)}</Chip>)
-    chips.push(<Chip key="time" className="chip">{props.dates.length + " time points"}</Chip>)
-    chips.push(<Chip key="sig" className="chip">{numSignals}</Chip>)
-    chips.push(<Chip key="pro" className="chip">{props.processes.length +
+    chips.push(<Chip key="rec" className="chip chip--spc">{numRecords}</Chip>)
+    chips.push(<Chip key="mean" className="chip chip--spc">{"mean of " + mean.toFixed(2)}</Chip>)
+    if (sd) chips.push(<Chip key="sd" className="chip chip--spc">{"sd of " + sd.toFixed(2)}</Chip>)
+    chips.push(<Chip key="time" className="chip chip--spc">{props.dates.length + " time points"}</Chip>)
+    chips.push(<Chip key="sig" className="chip chip--spc">{numSignals}</Chip>)
+    chips.push(<Chip key="pro" className="chip chip--spc">{props.processes.length +
     " process" + (props.processes.length == 1 ? "es" : "")}</Chip>)
 
     return chips;
@@ -39,7 +39,7 @@ export default class Meta extends Component {
     let h = this.props.highlightedCell;
 
     if (h.nest === "all" ) {
-      chips.push(<Chip key="a" className="chip">All data</Chip>)
+      chips.push(<Chip key="a" className="chip chip--geo">All data</Chip>)
       if (this.props.data.all.props) {
         chips = chips.concat(this.signalData(this.props.data.all.data, this.props.data.all.props));
       }
@@ -47,11 +47,11 @@ export default class Meta extends Component {
       for (let row of this.props.gridData) {
         if (row.region === this.props.highlightedCell.cell) {
           if (h.facet !== "__none__") {
-            chips.push(<Chip key="f" className="chip">{h.facet}</Chip>);
+            chips.push(<Chip key="f" className="chip chip--facet">{h.facet}</Chip>);
           }
-          chips.push(<Chip key="n" className="chip">{row.Neighbourh}</Chip>);
-          chips.push(<Chip key="npu" className="chip">{row.NPU}</Chip>);
-          chips.push(<Chip key="pop" className="chip">{"Population of " + row.pop2011}</Chip>);
+          chips.push(<Chip key="n" className="chip chip--geo">{row.Neighbourh}</Chip>);
+          chips.push(<Chip key="npu" className="chip chip--geo">{row.NPU}</Chip>);
+          chips.push(<Chip key="pop" className="chip chip--geo">{"Population of " + row.pop2011}</Chip>);
           break;
         }
       }
@@ -68,7 +68,7 @@ export default class Meta extends Component {
     } else if (h.nest === "npu") {
       for (let row of this.props.gridData) {
         if (row.NPU_code === this.props.highlightedCell.cell) {
-          chips.push(<Chip key="npu" className="chip">{row.NPU}</Chip>);
+          chips.push(<Chip key="npu" className="chip chip--geo">{row.NPU}</Chip>);
           break;
         }
       }
