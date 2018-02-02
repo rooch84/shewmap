@@ -50,24 +50,26 @@ class GeoMap extends Component {
         nextProps.bgOpacity !== this.props.bgOpacity ||
         nextProps.signalChange !== this.props.signalChange
       ) {
-      //  this.redraw(nextProps);
+        this.redraw(nextProps);
       }
     }
   }
 
   redraw = (props) => {
     let container = this.geoMapContainer;
-    props.data.forEach(function(d) {
+    props.data.facet.data[0].values.forEach(function(d) {
       geo.resetCell({container: container, cell: "." + d.key} );
 
-      geo.addSignals({
-        container: container,
-        cell: "." + d.key,
-        signalData: props.signals[d.key],
-        today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
-        posColour: props.signalAboveColour,
-        negColour: props.signalBelowColour,
-      });
+      if (props.facetOn === "__none__") {
+        geo.addSignals({
+          container: container,
+          cell: "." + d.key,
+          signalData: props.data.facet.data[0].props[d.key],
+          today: d3.timeParse("%m-%Y")(1 + "-" + 2016),
+          posColour: props.signalAboveColour,
+          negColour: props.signalBelowColour,
+        });
+      }
     });
   }
 
@@ -95,8 +97,10 @@ class GeoMap extends Component {
         colourAttribute: type,
         opacity: this.props.bgOpacity,
         cellHoverHandler: this.props.handleHightedCell,
+        cellSelectionHandler: this.props.handleCellSelection,
+        cellDeselectionHandler: this.props.handleCellDeselection,
       });
-      //this.redraw(this.props);
+      this.redraw(this.props);
       this.setState({initRender: false});
     }
 

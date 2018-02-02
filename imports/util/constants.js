@@ -11,7 +11,7 @@ export const exampleDatasets = {
     date: "Date",
     npu: "NPU_code",
     neighbourhood: "neighbourhood",
-    aggregateBy: "day",
+    aggregateBy: "month",
   },
   crime: {
     id: "crime",
@@ -30,24 +30,28 @@ export const dateAggregations = {
     field: "__Hour",
     name: "Hour",
     id: "hour",
+    inc: d => {return d.setHours(d.getHours()+1);}
   },
   day: {
     format: "%Y-%m-%d",
     field: "__Day",
     name: "Day",
     id: "day",
+    inc: d => {return d.setDate(d.getDay()+1);}
   },
   month: {
     format: "%Y-%m",
     field: "__Month",
     name: "Month",
     id: "month",
+    inc: d => {return d.setMonth(d.getMonth()+1);}
   },
   year: {
     format: "%Y",
     field: "__Year",
     name: "Year",
     id: "year",
+    inc: d => {return d.setYear(d.getYear()+1);}
   }
 }
 

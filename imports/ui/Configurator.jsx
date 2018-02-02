@@ -87,6 +87,10 @@ export default class Configurator extends Component {
     return (this.props.facetFields.map( (e) => { return(<MenuItem key={e} value={e} primaryText={e.replace(/__/g, "")} />) } ));
   }
 
+  processAggregateFields() {
+    return (Object.values(Const.dateAggregations).map( (e) => { return(<MenuItem key={e.id} value={e.id} primaryText={e.name} />) } ));
+  }
+
   renderItems() {
     items = [
       <ConfigItem key="1" title="Background" enabled={this.props.bgEnabled} enabledChangeHander={this.props.bgEnabledChangeHandler}>
@@ -266,6 +270,12 @@ export default class Configurator extends Component {
           <span className="config-item__row-item">Facet on</span>
             <DropDownMenu className="config-item__row-item" value={this.props.facetField} onChange={this.props.facetFieldChangeHandler}>
               {this.processFacetFields()}
+            </DropDownMenu>
+        </div>
+        <div className="config-item-row">
+          <span className="config-item__row-item">Aggregate by</span>
+            <DropDownMenu className="config-item__row-item" value={this.props.dateAggregation} onChange={this.props.dateAggregationChangeHandler}>
+              {this.processAggregateFields()}
             </DropDownMenu>
         </div>
 

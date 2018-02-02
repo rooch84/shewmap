@@ -82,6 +82,10 @@ export default class GridMap extends Component {
     this.setState({zoomMode: !this.state.zoomMode});
   }
 
+  handleZoomReset = () => {
+    gridmap.resetZoom(this.gridMapContainer);
+  }
+
   redraw(props) {
     let container = this.gridMapContainer;
 
@@ -236,6 +240,7 @@ export default class GridMap extends Component {
           <FontIcon onClick={this.props.handleSelectionModeChange}
             className="selectionLock material-icons">{this.props.selectionLocked ? "lock_outline" : "lock_open"}</FontIcon>
           <FontIcon onClick={this.handleZoomChange} className="zoomOrSelect material-icons">{this.state.zoomMode ? "pan_tool" : "search"}</FontIcon>
+          <FontIcon onClick={this.handleZoomReset} className="zoomReset material-icons">undo</FontIcon>
 
         </React.Fragment>
       </View>

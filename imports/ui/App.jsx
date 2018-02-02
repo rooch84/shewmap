@@ -71,7 +71,7 @@ class App extends Component {
       signalsReady: false,
       dateAggregation: Const.defaultFormat.id,
       signalChange: Math.random(),
-      autoDetectProcess: true,
+      autoDetectProcess: false,
       minDate: new Date(),
       maxDate: new Date(),
       facetFields: [],
@@ -92,6 +92,27 @@ class App extends Component {
   }
   onSelectionChange = (k) => {
     return function(e, i, v) { Meteor.call('profiles.updateField', {id: this.props.profile._id, name: k, value: v}); }.bind(this);
+  }
+
+  onDataAggregationChange = (e, i, v) => {
+    let data = this.rollData(
+      this.state.raw_data,
+      v,
+      this.state.minDate,
+      this.state.maxDate,
+      this.state.neighbourhoodField,
+      this.state.npuField,
+      this.state.facetOn
+    );
+
+    this.populateSignals(data, this.state.autoDetectProcess);
+
+    this.setState({
+      data: data,
+      dateAggregation: v,
+      signalChange: Math.random()
+    });
+
   }
 
   onFacetChange = (e, i, v) => {
@@ -152,8 +173,6 @@ class App extends Component {
   // TODO
   onSignalsChange = (c, s) => {
     var data = {...this.state.data}
-    console.log(c);
-    console.log(s);
 
     if (c.nest === "all") {
       data.all.props = s;
@@ -175,9 +194,6 @@ class App extends Component {
       }
     }
 
-
-    console.log(this.state.data.facet);
-
     this.setState({
       data: data,
       signalChange: Math.random(),
@@ -191,7 +207,6 @@ class App extends Component {
       autoDetectProcess: a,
     });
   }
-
 
   onCellHightlight = (cell) => {
     if (!this.state.selectionLocked) {
@@ -224,15 +239,22 @@ calculateSignals = (data, signals) => {
   data.forEach(function(d) {
     d.values.sort(function(a,b) {return a.Date-b.Date;});
 
-    var mean = d3.mean(d.values, function(d1) { return d1.Count});
-    var sd = d3.deviation(d.values, function(d1) { return d1.Count});
-    var ratio = sd / mean;
+    spc.getSignals(d.values, signals[d.key]);
 
-    if (mean + 3 * sd > maxVal) {
-      maxVal = mean + 3 * sd;
+
+
+    d.minMean = d3.min(signals[d.key].processes, function(d1) { return d1.mean});
+    d.maxMean = d3.max(signals[d.key].processes, function(d1) { return d1.mean});
+    d.minSd = d3.min(signals[d.key].processes, function(d1) { return d1.sd});
+    d.maxSd = d3.max(signals[d.key].processes, function(d1) { return d1.sd});
+    //var sd = d3.deviation(d.values, function(d1) { return d1.Count});
+    var ratio = d.maxSd / d.maxMean;
+
+    if (d.maxMean + 3 * d.maxSd > maxVal) {
+      maxVal = d.maxMean + 3 * d.maxSd;
     }
-    if (mean - 3 * sd < minVal) {
-      minVal = mean - 3 * sd;
+    if (d.minMean - 3 * d.minSd < minVal) {
+      minVal = d.minMean - 3 * d.minSd;
     }
     if (ratio > maxRatio) {
       maxRatio = ratio;
@@ -261,7 +283,6 @@ calculateSignals = (data, signals) => {
       volMinVal = volMean - 3 * volSd;
     }
 
-    spc.getSignals(d.values, signals[d.key]);
 
   });
 
@@ -269,8 +290,8 @@ calculateSignals = (data, signals) => {
     d.max = d3.max(signals[d.key].processes, function(d1) { return d1.mean + 3.5 * d1.sd});
     d.min = d3.min(signals[d.key].processes, function(d1) { return d1.mean - 3.5 * d1.sd});
     d.mean = d3.mean(d.values, function(d1) { return d1.Count});
-    d.minGlobalVar = d.mean - 3.5 * d.mean * maxRatio;
-    d.maxGlobalVar = d.mean + 3.5 * d.mean * maxRatio;
+    d.minGlobalVar = d.minMean - 3.5 * d.minMean * maxRatio;
+    d.maxGlobalVar = d.maxMean + 3.5 * d.maxMean * maxRatio;
     d.minGlobalCount = minVal;
     d.maxGlobalCount = maxVal;
     d.minVolume = volMinVal;
@@ -321,7 +342,7 @@ componentDidUpdate() {
     let win1251decoder = new TextDecoder('utf-8');
     let result = d3.csvParse(win1251decoder.decode(pako.inflate(this.props.data.data)));
     let ds = Const.exampleDatasets[this.props.datasetId];
-    this.loadDataset(result, ds.Date, ds.npu, ds.neighbourhood, ds.aggregateBy);
+    this.loadDataset(result, ds.date, ds.npu, ds.neighbourhood, ds.aggregateBy);
   };
   if (this.props.dataReady && this.props.profileReady && this.state.dataLoaded) {
     if (this.props.profile !== undefined) {
@@ -339,21 +360,31 @@ componentDidUpdate() {
   }
 }
 
-loadDataset = (data, dataField, npuField, neighbourhoodField, defaultAggregation) => {
+loadDataset = (data, dateField, npuField, neighbourhoodField, defaultAggregation) => {
   data.forEach( function (d) {
-    d.Date = d3.timeParse(Const.dateFormat)(d.Date);
+    d[dateField] = d3.timeParse(Const.dateFormat)(d[dateField]);
     for (let key of Object.keys(Const.dateAggregations)) {
-      d[Const.dateAggregations[key].field] = d3.timeFormat(Const.dateAggregations[key].format)(d.Date);
+      d[Const.dateAggregations[key].field] = d3.timeFormat(Const.dateAggregations[key].format)(d[dateField]);
+    }
+
+    let h = d[dateField].getHours()
+    if (h >= 0 && h < 6) {
+      d["timeOfDay"] = "Night";
+    } else if (h >= 6 && h < 12) {
+      d["timeOfDay"] = "Morning";
+    } else if (h >= 12 && h < 18) {
+      d["timeOfDay"] = "Afternoon";
+    } else if (h >= 18) {
+      d["timeOfDay"] = "Evening";
     }
   });
 
-  let minDate = d3.min(data, function(d) {return d.Date});
-  let maxDate = d3.max(data, function(d) {return d.Date});
+  let minDate = d3.min(data, function(d) {return d[dateField]});
+  let maxDate = d3.max(data, function(d) {return d[dateField]});
 
   let nestedData = this.rollData(data, defaultAggregation, minDate, maxDate, neighbourhoodField, npuField, this.state.facetOn);
 
   let facetFields = ["__none__"];
-
   if (data.length > 0) {
     for (let key of Object.keys(data[0])) {
       if (isNaN(data[0][key]) && data[0][key] !== "NA" && !(key.startsWith("__"))) {
@@ -478,7 +509,7 @@ render() {
             <ToolbarTitle style={{color: "white"}} text="ShewMap v0.1" />
           </ToolbarGroup>
           <ToolbarGroup lastChild={true}>
-            {Meteor.userId() ? <IconButton
+            {Meteor.userId() && this.state.dataLoaded ? <IconButton
               iconStyle={{color: "white"}}
               tooltip="Show raw SPC"
               onClick={e => this.setState({
@@ -548,6 +579,8 @@ renderConfigurator(configSettings) {
       facetFields={this.state.facetFields}
       facetFieldChangeHandler={this.onFacetChange}
       facetField={this.state.facetOn}
+      dateAggregation={this.state.dateAggregation}
+      dateAggregationChangeHandler={this.onDataAggregationChange}
       {...configSettings}
       />
   )
@@ -591,6 +624,7 @@ renderMain(props) {
           onHandleLayoutChange={this.onConfigChange("layout")}
           onSignalsChange={this.onSignalsChange}
           signalChange={this.state.signalChange}
+          facetOn={this.state.facetOn}
           />
       </div>
     )
