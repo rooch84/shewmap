@@ -21,7 +21,7 @@ export default class Meta extends Component {
     numSignals += numSignals == 1 ? " signal point" : " signal points";
     numRecords += numRecords == 1 ? " record" : " records";
     chips.push(<Chip key="rec" className="chip chip--spc">{numRecords}</Chip>)
-    chips.push(<Chip key="mean" className="chip chip--spc">{"mean of " + mean.toFixed(2)}</Chip>)
+    if (mean) chips.push(<Chip key="mean" className="chip chip--spc">{"mean of " + mean.toFixed(2)}</Chip>)
     if (sd) chips.push(<Chip key="sd" className="chip chip--spc">{"sd of " + sd.toFixed(2)}</Chip>)
     chips.push(<Chip key="time" className="chip chip--spc">{props.dates.length + " time points"}</Chip>)
     chips.push(<Chip key="sig" className="chip chip--spc">{numSignals}</Chip>)

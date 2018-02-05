@@ -108,7 +108,8 @@ class App extends Component {
       this.state.maxDate,
       this.state.neighbourhoodField,
       this.state.npuField,
-      this.state.facetOn
+      this.state.facetOn,
+      this.state.dateField
     );
 
     this.populateSignals(data, this.state.autoDetectProcess);
@@ -131,7 +132,8 @@ class App extends Component {
       this.state.maxDate,
       this.state.neighbourhoodField,
       this.state.npuField,
-      facetOn
+      facetOn,
+      this.state.dateField
     );
 
     this.state.data.facet.data.forEach( (d1) => {
@@ -163,7 +165,8 @@ class App extends Component {
         k === "maxDate" ? v : this.state.maxDate,
         this.state.neighbourhoodField,
         this.state.npuField,
-        this.state.facetOn
+        this.state.facetOn,
+        this.state.dateField
       );
 
       this.populateSignals(data, this.state.autoDetectProcess);
@@ -334,7 +337,7 @@ populateSignals(data, autoDetectProcess) {
     "autoDetectProcess" : autoDetectProcess,
     "signalDescriptors": signalDescriptors,
   };
-
+  data.all.data.sort(function(a,b) {return a.Date-b.Date;});
   spc.getSignals(data.all.data, data.all.props);
 
   for (let i of ["neighbourhood", "npu"]) {
@@ -388,7 +391,7 @@ loadDataset = (data, dateField, npuField, neighbourhoodField, defaultAggregation
   let minDate = d3.min(data, function(d) {return d[dateField]});
   let maxDate = d3.max(data, function(d) {return d[dateField]});
 
-  let nestedData = this.rollData(data, defaultAggregation, minDate, maxDate, neighbourhoodField, npuField, this.state.facetOn);
+  let nestedData = this.rollData(data, defaultAggregation, minDate, maxDate, neighbourhoodField, npuField, this.state.facetOn, dateField);
 
   let facetFields = ["__none__"];
   if (data.length > 0) {
@@ -406,13 +409,14 @@ loadDataset = (data, dateField, npuField, neighbourhoodField, defaultAggregation
     dataLoaded: true,
     minDate: minDate,
     maxDate: maxDate,
+    dateField: dateField,
     npuField: npuField,
     neighbourhoodField: neighbourhoodField,
     facetFields: facetFields,
   })
 }
 
-rollData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
+rollData(data, agg, minDate, maxDate, nField, npuField, facetOn, dateField) {
 
   let npuData = d3.nest()
   .key(function(d) { return d[npuField]; })
@@ -420,7 +424,8 @@ rollData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
   .rollup(function(v) {
     return v.length;
   })
-  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+  .entries(data.filter(d => d[dateField] >= minDate && d[dateField] <= maxDate ));
+
 
   let neighbourhoodData = d3.nest()
   .key(function(d) { return d[nField]; })
@@ -428,37 +433,122 @@ rollData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
   .rollup(function(v) {
     return v.length;
   })
-  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+  .entries(data.filter(d => d[dateField] >= minDate && d[dateField] <= maxDate ));
 
   let allData = d3.nest()
   .key(function(d) { return d[Const.dateAggregations[agg].field]; })
   .rollup(function(v) {
     return v.length;
   })
-  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+  .entries(data.filter(d => d[dateField] >= minDate && d[dateField] <= maxDate ));
 
+
+  // NPU
+  let startDate = 0;
+  let dMax = 0;
   npuData.forEach( function(d) {
     d.values.forEach( function (d2) {
       d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
       d2.Count = +d2.value;
+      if (startDate == 0 || startDate > d2.Date) startDate = d2.Date;
+      if (dMax == 0 || dMax < d2.Date) dMax = d2.Date;
     });
   });
 
+  let r1 = [];
+  while (startDate <= dMax) {
+    r1.push(startDate.getTime());
+    Const.dateAggregations[agg].inc(startDate);
+  }
+
+  r1 = new Set(r1);
+  npuData.forEach( function(d) {
+    let r2 = new Set(d.values.map(e => e.Date.getTime()));
+    let diff = new Set([...r1].filter(x => !r2.has(x)));
+
+    for (let fake of diff) {
+      d.values.push( {
+        key: d3.timeFormat(Const.dateAggregations[agg].format)(new Date(fake)),
+        value: 0,
+        Date: new Date(fake),
+        Count: 0,
+        volume: 0,
+      })
+    }
+  });
+
+  // Neighbourhood
+  startDate = 0;
+  dMax = 0;
   neighbourhoodData.forEach( function(d) {
     d.values.forEach( function (d2) {
       d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
       d2.Count = +d2.value;
+      if (startDate == 0 || startDate > d2.Date) startDate = d2.Date;
+      if (dMax == 0 || dMax < d2.Date) dMax = d2.Date;
     });
   });
 
+  r1 = [];
+  while (startDate <= dMax) {
+    r1.push(startDate.getTime());
+    Const.dateAggregations[agg].inc(startDate);
+  }
+  r1 = new Set(r1);
+
+  r1 = new Set(r1);
+  neighbourhoodData.forEach( function(d) {
+    let r2 = new Set(d.values.map(e => e.Date.getTime()));
+    let diff = new Set([...r1].filter(x => !r2.has(x)));
+
+    for (let fake of diff) {
+      d.values.push( {
+        key: d3.timeFormat(Const.dateAggregations[agg].format)(new Date(fake)),
+        value: 0,
+        Date: new Date(fake),
+        Count: 0,
+        volume: 0,
+      })
+    }
+  });
+
+
+  // All
+  startDate = 0;
+  dMax = 0;
   allData.forEach( function(d2) {
     d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
     d2.Count = +d2.value;
+    if (startDate == 0 || startDate > d2.Date) startDate = d2.Date;
+    if (dMax == 0 || dMax < d2.Date) dMax = d2.Date;
   });
+
+  r1 = [];
+  while (startDate <= dMax) {
+    r1.push(startDate.getTime());
+    Const.dateAggregations[agg].inc(startDate);
+  }
+  r1 = new Set(r1);
+
+
+  let r2 = new Set(allData.map(e => e.Date.getTime()));
+  let diff = new Set([...r1].filter(x => !r2.has(x)));
+
+  for (let fake of diff) {
+    allData.push( {
+      key: d3.timeFormat(Const.dateAggregations[agg].format)(new Date(fake)),
+      value: 0,
+      Date: new Date(fake),
+      Count: 0,
+      volume: 0,
+    })
+  }
+
+
 
   let nData = {
     facet: {
-      data: this.rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn),
+      data: this.rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn, dateField),
     },
     npu: {
       data: npuData,
@@ -474,7 +564,7 @@ rollData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
   return nData;
 }
 
-rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
+rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn, dateField) {
   let facetData = d3.nest()
   .key(function(d) { return facetOn === '__none__' ? facetOn : d[facetOn]; })
   .key(function(d) { return d[nField]; })
@@ -482,15 +572,43 @@ rollFacetData(data, agg, minDate, maxDate, nField, npuField, facetOn) {
   .rollup(function(v) {
     return v.length;
   })
-  .entries(data.filter(d => d.Date >= minDate && d.Date <= maxDate ));
+  .entries(data.filter(d => d[dateField] >= minDate && d[dateField] <= maxDate ));
 
+  let startDate = 0;
+  let dMax = 0;
   facetData.forEach( function(d) {
     d.uuid = "class_" + uuidv1();
     d.values.forEach( function (d1) {
       d1.values.forEach( function (d2) {
         d2.Date = d3.timeParse(Const.dateAggregations[agg].format)(d2.key);
         d2.Count = +d2.value;
+        if (startDate == 0 || startDate > d2.Date) startDate = d2.Date;
+        if (dMax == 0 || dMax < d2.Date) dMax = d2.Date;
       });
+    });
+  });
+
+  let i = 0;
+  let r1 = [];
+  while (startDate <= dMax) {
+    r1.push(startDate.getTime());
+    Const.dateAggregations[agg].inc(startDate);
+  }
+  r1 = new Set(r1);
+  facetData.forEach( function(d) {
+    d.values.forEach( function (d1) {
+      let r2 = new Set(d1.values.map(e => e.Date.getTime()));
+      let diff = new Set([...r1].filter(x => !r2.has(x)));
+
+      for (let fake of diff) {
+        d1.values.push( {
+          key: d3.timeFormat(Const.dateAggregations[agg].format)(new Date(fake)),
+          value: 0,
+          Date: new Date(fake),
+          Count: 0,
+          volume: 0,
+        })
+      }
     });
   });
 
@@ -512,7 +630,7 @@ render() {
               <FontIcon className="material-icons mi-button">menu</FontIcon>
             </IconButton>
             <Logo />
-            <ToolbarTitle style={{color: "white"}} text="ShewMap v0.1" />
+            <ToolbarTitle style={{color: "white"}} text="ShewMap v1.0.1" />
           </ToolbarGroup>
           <ToolbarGroup lastChild={true}>
             {Meteor.userId() && this.state.dataLoaded ? <IconButton

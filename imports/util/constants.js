@@ -4,19 +4,19 @@ export const processScaleTypes = [ {id: "global", name: "Global crime count"}, {
 {id: "local", name: "Local range"}];//,{id: "volume", name: "Global crime volume"}];
 
 export const exampleDatasets = {
-  stop: {
-    id: "stop",
-    name: "West Midlands Stop and Search",
-    fileName: "data/stopAndSearch.csv.gz",
+  crime: {
+    id: "crime",
+    name: "West Midlands Crime",
+    fileName: "data/crime_subset.csv.gz",
     date: "Date",
     npu: "NPU_code",
     neighbourhood: "neighbourhood",
     aggregateBy: "month",
   },
-  crime: {
-    id: "crime",
-    name: "West Midlands Crime",
-    fileName: "data/crime_subset.csv.gz",
+  stop: {
+    id: "stop",
+    name: "West Midlands Stop and Search",
+    fileName: "data/stopAndSearch.csv.gz",
     date: "Date",
     npu: "NPU_code",
     neighbourhood: "neighbourhood",
@@ -37,7 +37,7 @@ export const dateAggregations = {
     field: "__Day",
     name: "Day",
     id: "day",
-    inc: d => {return d.setDate(d.getDay()+1);}
+    inc: d => {return d.setDate(d.getDate()+1);}
   },
   month: {
     format: "%Y-%m",
